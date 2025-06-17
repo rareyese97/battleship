@@ -1,0 +1,69 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               Int              @id @default(autoincrement())
+  username         String           @unique
+  email            String           @unique
+  password         String
+  wins             Int              @default(0)
+  losses           Int              @default(0)
+  
+  // two separate back-relations to Game:
+  gamesAsPlayer1   Game[]           @relation("Player1Games")
+  gamesAsPlayer2   Game[]           @relation("Player2Games")
+
+  messages         Message[]
+  sentRequests     FriendRequest[]  @relation("SentRequests")
+  receivedRequests FriendRequest[]  @relation("ReceivedRequests")
+  friends          User[]           @relation("UserFriends")
+  friendOf         User[]           @relation("UserFriends")
+
+
+  emailVerified    Boolean  @default(false)      // Has the user clicked the link?
+  verifyToken      String?                        // Random token you emailed
+  verifySentAt     DateTime?                      // When you sent it (for expiry)
+  resetToken       String?
+  resetSentAt      DateTime?
+}
+
+model Game {
+  id         Int       @id @default(autoincrement())
+  player1    User      @relation("Player1Games", fields: [player1Id], references: [id])
+  player1Id  Int
+
+  player2    User      @relation("Player2Games", fields: [player2Id], references: [id])
+  player2Id  Int
+
+  winnerId   Int?
+  createdAt  DateTime  @default(now())
+  messages   Message[]
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  game      Game     @relation(fields: [gameId], references: [id])
+  gameId    Int
+  sender    User     @relation(fields: [senderId], references: [id])
+  senderId  Int
+  content   String
+  sentAt    DateTime @default(now())
+}
+
+model FriendRequest {
+  id          Int      @id @default(autoincrement())
+  sender      User     @relation("SentRequests", fields: [senderId], references: [id])
+  senderId    Int
+  receiver    User     @relation("ReceivedRequests", fields: [receiverId], references: [id])
+  receiverId  Int
+  status      String
+  createdAt   DateTime @default(now())
+
+  @@unique([senderId, receiverId])
+}
