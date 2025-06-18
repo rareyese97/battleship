@@ -16,7 +16,7 @@ function initSocket(server) {
 			origin: allowedOrigins,
 			credentials: true,
 		},
-		path: "/socket.io", // Required for correct proxying (Render/Vercel/Nginx)
+		path: "/socket.io",
 	});
 
 	async function recordMatchResult(winnerId, loserId) {
@@ -117,12 +117,12 @@ function initSocket(server) {
 			const match = matchStore.getMatch(matchId);
 			if (!match || match.status !== "active") return;
 
-			const attacker = match.players[userId];
-			const defender = Object.values(match.players).find((p) => p.user.id !== userId);
+			const attackerId = userId; // 👈 Fix: use userId from connection
+			const defenderId = Object.values(match.players).find((p) => p.user.id !== attackerId)?.user.id;
 
-			if (!attacker || !defender || match.turn !== userId) return;
+			if (!attackerId || !defenderId || match.turn !== attackerId) return;
 
-			const defenderBoard = defender.board;
+			const defenderBoard = match.players[defenderId].board;
 			const cell = defenderBoard[row]?.[col];
 
 			const hit = cell?.status === "ship";
@@ -151,36 +151,35 @@ function initSocket(server) {
 				}
 			}
 
-			attacker.socket.emit("bomb_result", {
+			match.players[attackerId].socket.emit("bomb_result", {
 				row,
 				col,
 				hit,
 				yourSide: "enemy",
 				shipId,
 				sunk,
-				sunkShipCells,
+				sunkShipCells: sunk ? sunkShipCells : [],
 			});
-
-			defender.socket.emit("bomb_result", {
+			match.players[defenderId].socket.emit("bomb_result", {
 				row,
 				col,
 				hit,
 				yourSide: "own",
 				shipId,
 				sunk,
-				sunkShipCells,
+				sunkShipCells: sunk ? sunkShipCells : [],
 			});
 
 			const allSunk = defenderBoard.flat().every((cell) => cell.status !== "ship");
 			if (allSunk) {
-				const winnerName = attacker.user.username;
-				attacker.socket.emit("game_over", { winner: winnerName });
-				defender.socket.emit("game_over", { winner: winnerName });
-				recordMatchResult(attacker.user.id, defender.user.id).catch(console.error);
+				const winnerName = match.players[attackerId].user.username;
+				match.players[attackerId].socket.emit("game_over", { winner: winnerName });
+				match.players[defenderId].socket.emit("game_over", { winner: winnerName });
+				recordMatchResult(attackerId, defenderId).catch(console.error);
 				matchStore.removeMatch(matchId);
 			} else if (!hit) {
-				match.turn = defender.user.id;
-				defender.socket.emit("your_turn");
+				match.turn = defenderId;
+				match.players[defenderId].socket.emit("your_turn");
 			}
 		});
 
@@ -188,9 +187,9 @@ function initSocket(server) {
 			io.emit("chat_message", msg);
 		});
 
-		// socket.on("disconnect", () => {
-		// 	matchStore.removeBySocket(socket);
-		// });
+		socket.on("disconnect", () => {
+			matchStore.removeBySocket(socket);
+		});
 	});
 
 	console.log("✅ Socket.IO initialized");
