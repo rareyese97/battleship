@@ -35,7 +35,9 @@ export default function ChatBubble({ socket, user }: ChatBubbleProps) {
 			}
 		};
 		socket.on("chat_message", listener);
-		return () => socket.off("chat_message", listener);
+		return () => {
+			socket.off("chat_message", listener);
+		};
 	}, [socket, open, user.username]);
 
 	useEffect(() => {
