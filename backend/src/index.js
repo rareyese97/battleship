@@ -8,6 +8,8 @@ const { PrismaClient } = require("@prisma/client");
 const authRouter = require("./routes/auth");
 
 const app = express();
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 const prisma = new PrismaClient();
 const { initSocket } = require("./socket");
