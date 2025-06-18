@@ -117,11 +117,13 @@ function initSocket(server) {
 			const match = matchStore.getMatch(matchId);
 			if (!match || match.status !== "active") return;
 
-			const attackerId = Object.values(match.players).find((p) => p.socket.id === socket.id)?.user.id;
-			const defenderId = Object.values(match.players).find((p) => p.user.id !== attackerId)?.user.id;
+			const attackerEntry = Object.values(match.players).find((p) => p.socket.id === socket.id);
+			const defenderEntry = Object.values(match.players).find((p) => p.socket.id !== socket.id);
 
-			if (!attackerId || !defenderId || match.turn !== attackerId) return;
+			if (!attackerEntry || !defenderEntry || match.turn !== attackerEntry.user.id) return;
 
+			const attackerId = attackerEntry.user.id;
+			const defenderId = defenderEntry.user.id;
 			const defenderBoard = match.players[defenderId].board;
 			const cell = defenderBoard[row]?.[col];
 
@@ -151,7 +153,7 @@ function initSocket(server) {
 				}
 			}
 
-			match.players[attackerId].socket.emit("bomb_result", {
+			attackerEntry.socket.emit("bomb_result", {
 				row,
 				col,
 				hit,
@@ -160,7 +162,7 @@ function initSocket(server) {
 				sunk,
 				sunkShipCells: sunk ? sunkShipCells : [],
 			});
-			match.players[defenderId].socket.emit("bomb_result", {
+			defenderEntry.socket.emit("bomb_result", {
 				row,
 				col,
 				hit,
@@ -172,14 +174,14 @@ function initSocket(server) {
 
 			const allSunk = defenderBoard.flat().every((cell) => cell.status !== "ship");
 			if (allSunk) {
-				const winnerName = match.players[attackerId].user.username;
-				match.players[attackerId].socket.emit("game_over", { winner: winnerName });
-				match.players[defenderId].socket.emit("game_over", { winner: winnerName });
+				const winnerName = attackerEntry.user.username;
+				attackerEntry.socket.emit("game_over", { winner: winnerName });
+				defenderEntry.socket.emit("game_over", { winner: winnerName });
 				recordMatchResult(attackerId, defenderId).catch(console.error);
 				matchStore.removeMatch(matchId);
 			} else if (!hit) {
 				match.turn = defenderId;
-				match.players[defenderId].socket.emit("your_turn");
+				defenderEntry.socket.emit("your_turn");
 			}
 		});
 
