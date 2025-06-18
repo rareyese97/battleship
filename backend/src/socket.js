@@ -189,9 +189,9 @@ function initSocket(server) {
 			io.emit("chat_message", msg);
 		});
 
-		socket.on("disconnect", () => {
-			matchStore.removeBySocket(socket);
-		});
+		// socket.on("disconnect", () => {
+		// 	matchStore.removeBySocket(socket);
+		// });
 	});
 
 	console.log("✅ Socket.IO initialized");
