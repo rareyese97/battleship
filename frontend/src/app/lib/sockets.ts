@@ -1,11 +1,10 @@
-// lib/sockets.ts
 import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
 
 export const initSocket = (userId: number): Socket => {
 	if (!socket) {
-		socket = io(process.env.NEXT_PUBLIC_BACKEND_URL!, {
+		socket = io("https://api.sinkthatship.com", {
 			withCredentials: true,
 			transports: ["websocket"],
 			query: { userId },
