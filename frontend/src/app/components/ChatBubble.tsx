@@ -26,7 +26,7 @@ export default function ChatBubble({ socket, user }: ChatBubbleProps) {
 	}
 
 	useEffect(() => {
-		if (!socket) return;
+		if (!socket) return undefined;
 		const listener = (msg: string) => {
 			const sender = msg.split(": ")[0];
 			setMessages((prev) => [...prev, msg]);
