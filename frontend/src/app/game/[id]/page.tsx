@@ -116,7 +116,11 @@ export default function GamePage() {
 							};
 						}
 						if (shipId !== undefined && c.shipId === shipId && sunk) {
-							return { ...c, sunk: true };
+							return {
+								...c,
+								status: c.status,
+								sunk: true,
+							};
 						}
 						return c;
 					})
