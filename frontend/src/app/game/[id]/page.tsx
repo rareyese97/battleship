@@ -79,7 +79,7 @@ export default function GamePage() {
 
 		const socket = io("https://api.sinkthatship.com", {
 			withCredentials: true,
-			transports: ["websocket"],
+			transports: ["polling", "websocket"],
 			query: { userId: user.id },
 		});
 		socketRef.current = socket;
