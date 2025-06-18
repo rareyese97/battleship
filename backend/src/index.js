@@ -11,10 +11,15 @@ const app = express();
 const server = http.createServer(app);
 const prisma = new PrismaClient();
 const { initSocket } = require("./socket");
-
+const allowedOrigins = ["http://localhost:3000", "https://battleship-2646.vercel.app"];
 
 // Set up middleware
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(
+	cors({
+		origin: allowedOrigins,
+		credentials: true,
+	})
+);
 app.use(express.json());
 app.use(
 	session({
