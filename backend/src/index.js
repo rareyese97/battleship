@@ -19,7 +19,9 @@ const allowedOrigins = [
 	"http://localhost:3000",
 	"https://sinkthatship.com",
 	"https://www.sinkthatship.com",
+	"https://api.sinkthatship.com",
 ];
+
 // CORS Middleware
 app.use(
 	cors({
