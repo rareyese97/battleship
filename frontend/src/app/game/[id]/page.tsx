@@ -111,7 +111,7 @@ export default function GamePage() {
 		});
 
 		socket.on("bomb_result", (payload: BombResultPayload) => {
-		const { row, col, hit, yourSide, shipId, sunk } = payload;
+			const { row, col, hit, yourSide, shipId, sunk } = payload;
 
 			setLastTarget([row, col]);
 
@@ -130,7 +130,7 @@ export default function GamePage() {
 						if (shipId !== undefined && c.shipId === shipId && sunk) {
 							return {
 								...c,
-								status: c.status,
+								status: c.status as "empty" | "miss" | "hit" | "ship",
 								revealed: c.revealed,
 								shipId: c.shipId,
 								sunk: true,
