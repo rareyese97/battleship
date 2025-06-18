@@ -52,10 +52,31 @@ function removeFromQueue(userId) {
 }
 
 function removeBySocket(socket) {
+	// First check active matches
+	for (const matchId in matches) {
+		const match = matches[matchId];
+		for (const playerId in match.players) {
+			const player = match.players[playerId];
+			if (player.socket.id === socket.id) {
+				// Notify opponent
+				const opponent = Object.values(match.players).find((p) => p.user.id !== player.user.id);
+				if (opponent?.socket) {
+					opponent.socket.emit("game_over", { winner: null, reason: "disconnect" });
+				}
+				// Remove match
+				delete matches[matchId];
+				console.log(`❌ Removed match ${matchId} due to disconnect`);
+				return;
+			}
+		}
+	}
+
+	// Else, remove from queue
 	for (let [userId, { socket: s }] of queue.entries()) {
 		if (s.id === socket.id) {
 			queue.delete(userId);
-			break;
+			console.log(`❌ Removed player ${userId} from queue due to disconnect`);
+			return;
 		}
 	}
 }
