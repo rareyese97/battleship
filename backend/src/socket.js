@@ -3,37 +3,48 @@ const matchStore = require("./routes/matchStore");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-let io;
+const allowedOrigins = [
+	"http://localhost:3000",
+	"https://sinkthatship.com",
+	"https://www.sinkthatship.com",
+	"https://api.sinkthatship.com",
+];
 
 function initSocket(server) {
-	io = new Server(server, {
+	const io = new Server(server, {
 		cors: {
-			origin: "http://localhost:3000",
-			methods: ["GET", "POST"],
+			origin: function (origin, callback) {
+				if (!origin) return callback(null, true);
+
+				if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
+					return callback(null, true);
+				} else {
+					console.log("❌ Blocked Socket.IO origin:", origin);
+					return callback(new Error("Not allowed by CORS (socket.io)"));
+				}
+			},
 			credentials: true,
 		},
 	});
 
 	async function recordMatchResult(winnerId, loserId) {
 		try {
-			"🛠 Updating winner:", winnerId;
 			await prisma.user.update({
 				where: { id: winnerId },
 				data: { wins: { increment: 1 } },
 			});
-			"🛠 Updating loser:", loserId;
 			await prisma.user.update({
 				where: { id: loserId },
 				data: { losses: { increment: 1 } },
 			});
-			`🏆 Match result: ${winnerId} +1 win, ${loserId} +1 loss`;
+			console.log(`🏆 Match result: ${winnerId} +1 win, ${loserId} +1 loss`);
 		} catch (err) {
 			console.error("Failed to record match result:", err);
 		}
 	}
 
 	io.on("connection", (socket) => {
-		"🔌 New client connected:", socket.id;
+		console.log("🔌 New client connected:", socket.id);
 
 		const userId = parseInt(socket.handshake.query.userId, 10);
 		if (!userId) {
@@ -46,7 +57,7 @@ function initSocket(server) {
 				console.warn("find_match missing userId or username");
 				return;
 			}
-			"📡 Received find_match from", userId;
+			console.log("📡 Received find_match from", userId);
 			matchStore.queuePlayer(userId, username, socket, io);
 		});
 
@@ -131,7 +142,7 @@ function initSocket(server) {
 
 			let sunk = false;
 			let shipId = null;
-			let sunkShipCells = []; 
+			let sunkShipCells = [];
 
 			if (hit && cell.shipId !== undefined) {
 				shipId = cell.shipId;
@@ -139,7 +150,6 @@ function initSocket(server) {
 				sunk = shipCells.length > 0 && shipCells.every((c) => c.status === "hit");
 
 				if (sunk) {
-					// Get all coordinates of the sunk ship
 					sunkShipCells = [];
 					for (let r = 0; r < defenderBoard.length; r++) {
 						for (let c = 0; c < defenderBoard[r].length; c++) {
@@ -151,7 +161,6 @@ function initSocket(server) {
 				}
 			}
 
-			// Send bomb result with sunk ship coordinates
 			match.players[attackerId].socket.emit("bomb_result", {
 				row,
 				col,
@@ -193,6 +202,7 @@ function initSocket(server) {
 		});
 	});
 
+	console.log("✅ Socket.IO initialized");
 	return io;
 }
 
