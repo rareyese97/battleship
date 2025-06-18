@@ -16,10 +16,22 @@ const allowedOrigins = ["http://localhost:3000", "https://battleship-2646.vercel
 // Set up middleware
 app.use(
 	cors({
-		origin: allowedOrigins,
+		origin: function (origin, callback) {
+			if (!origin) return callback(null, true);
+
+			const allowedOrigins = ["http://localhost:3000", "https://battleship-2646.vercel.app"];
+
+			if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
+				return callback(null, true);
+			} else {
+				console.log("❌ Blocked CORS origin:", origin);
+				return callback(new Error("Not allowed by CORS"));
+			}
+		},
 		credentials: true,
 	})
 );
+
 app.use(express.json());
 app.use(
 	session({
@@ -28,9 +40,9 @@ app.use(
 		saveUninitialized: false,
 		cookie: {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production", // true in prod
+			secure: process.env.NODE_ENV === "production",
 			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-			maxAge: 1000 * 60 * 60 * 24, // 1 day
+			maxAge: 1000 * 60 * 60 * 24,
 		},
 	})
 );
