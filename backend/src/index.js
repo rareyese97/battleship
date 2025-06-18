@@ -11,40 +11,56 @@ const app = express();
 const server = http.createServer(app);
 const prisma = new PrismaClient();
 const { initSocket } = require("./socket");
-const allowedOrigins = ["http://localhost:3000", "https://battleship-2646.vercel.app"];
 
-// Set up middleware
+// Set up CORS middleware
 app.use(
-	cors({
-		origin: function (origin, callback) {
-			if (!origin) return callback(null, true);
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
 
-			const allowedOrigins = ["http://localhost:3000", "https://battleship-2646.vercel.app"];
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "https://battleship-2646.vercel.app",
+      ];
 
-			if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
-				return callback(null, true);
-			} else {
-				console.log("❌ Blocked CORS origin:", origin);
-				return callback(new Error("Not allowed by CORS"));
-			}
-		},
-		credentials: true,
-	})
+      // Allow Vercel preview subdomains
+      if (
+        allowedOrigins.includes(origin) ||
+        /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)
+      ) {
+        return callback(null, true);
+      } else {
+        console.log("❌ Blocked CORS origin:", origin);
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
 );
 
 app.use(express.json());
+
+// Session middleware
 app.use(
-	session({
-		secret: process.env.SESSION_SECRET || "keyboard cat",
-		resave: false,
-		saveUninitialized: false,
-		cookie: {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-			maxAge: 1000 * 60 * 60 * 24,
-		},
-	})
+  session({
+    secret: process.env.SESSION_SECRET || "keyboard cat",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure:
+        process.env.NODE_ENV === "production" ||
+        process.env.VERCEL === "1" ||
+        process.env.RENDER === "TRUE",
+      sameSite:
+        process.env.NODE_ENV === "production" ||
+        process.env.VERCEL === "1" ||
+        process.env.RENDER === "TRUE"
+          ? "none"
+          : "lax",
+      maxAge: 1000 * 60 * 60 * 24,
+    },
+  })
 );
 
 // Auth routes
@@ -52,50 +68,57 @@ app.use("/api/auth", authRouter);
 
 // Session route
 app.get("/api/session", (req, res) => {
-	if (req.session.user) {
-		return res.json({ user: req.session.user });
-	}
-	res.json({});
+  if (req.session.user) {
+    return res.json({ user: req.session.user });
+  }
+  res.json({});
 });
 
 // Leaderboard route
 app.get("/api/leaderboard", async (req, res) => {
-	const type = req.query.type || "global";
-	try {
-		let users;
-		if (type === "friends" && req.session.user) {
-			const userWithFriends = await prisma.user.findUnique({
-				where: { id: req.session.user.id },
-				include: { friends: true },
-			});
-			const friendIds = userWithFriends.friends.map((f) => f.id).concat(req.session.user.id);
-			users = await prisma.user.findMany({
-				where: { id: { in: friendIds } },
-				orderBy: { wins: "desc" },
-				take: 15,
-			});
-		} else {
-			users = await prisma.user.findMany({
-				orderBy: { wins: "desc" },
-				take: 15,
-			});
-		}
-		const data = users.map((u) => ({ id: u.id, username: u.username, wins: u.wins, losses: u.losses }));
-		res.json(data);
-	} catch (err) {
-		console.error(err);
-		res.status(500).json({ error: "Internal server error." });
-	}
+  const type = req.query.type || "global";
+  try {
+    let users;
+    if (type === "friends" && req.session.user) {
+      const userWithFriends = await prisma.user.findUnique({
+        where: { id: req.session.user.id },
+        include: { friends: true },
+      });
+      const friendIds = userWithFriends.friends
+        .map((f) => f.id)
+        .concat(req.session.user.id);
+      users = await prisma.user.findMany({
+        where: { id: { in: friendIds } },
+        orderBy: { wins: "desc" },
+        take: 15,
+      });
+    } else {
+      users = await prisma.user.findMany({
+        orderBy: { wins: "desc" },
+        take: 15,
+      });
+    }
+    const data = users.map((u) => ({
+      id: u.id,
+      username: u.username,
+      wins: u.wins,
+      losses: u.losses,
+    }));
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error." });
+  }
 });
 
 // Placeholder for saving fleet
 app.post("/api/fleet", async (req, res) => {
-	res.json({ ok: true });
+  res.json({ ok: true });
 });
 
 // Root route
 app.get("/", (req, res) => {
-	res.send("Backend is running!");
+  res.send("Backend is running!");
 });
 
 // Start socket server
@@ -103,5 +126,5 @@ initSocket(server);
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-	console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
