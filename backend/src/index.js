@@ -8,21 +8,22 @@ const { PrismaClient } = require("@prisma/client");
 const authRouter = require("./routes/auth");
 
 const app = express();
-app.set("trust proxy", 1);
+app.set("trust proxy", 1); // Trust Heroku/Render/Vercel proxy
 
 const server = http.createServer(app);
 const prisma = new PrismaClient();
 const { initSocket } = require("./socket");
 
-// Set up CORS middleware
+// Allowed Origins
+const allowedOrigins = ["http://localhost:3000", "https://sinkthatship.com"];
+
+// CORS Middleware
 app.use(
 	cors({
 		origin: function (origin, callback) {
 			if (!origin) return callback(null, true);
 
-			const allowedOrigins = ["http://localhost:3000", "https://battleship-2646.vercel.app"];
-
-			// Allow Vercel preview subdomains
+			// Allow localhost, prod, and Vercel previews
 			if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
 				return callback(null, true);
 			} else {
@@ -36,7 +37,7 @@ app.use(
 
 app.use(express.json());
 
-// Session middleware
+// Session Middleware
 app.use(
 	session({
 		secret: process.env.SESSION_SECRET || "keyboard cat",
@@ -44,18 +45,22 @@ app.use(
 		saveUninitialized: false,
 		cookie: {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-			domain: undefined, 
+			secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1" || process.env.RENDER === "TRUE",
+			sameSite:
+				process.env.NODE_ENV === "production" || process.env.VERCEL === "1" || process.env.RENDER === "TRUE"
+					? "none"
+					: "lax",
+			// If you want to force cookies to your domain:
+			// domain: process.env.NODE_ENV === "production" ? "sinkthatship.com" : undefined,
 			maxAge: 1000 * 60 * 60 * 24,
 		},
 	})
 );
 
-// Auth routes
+// Auth Routes
 app.use("/api/auth", authRouter);
 
-// Session route
+// Session Route
 app.get("/api/session", (req, res) => {
 	if (req.session.user) {
 		return res.json({ user: req.session.user });
@@ -63,7 +68,7 @@ app.get("/api/session", (req, res) => {
 	res.json({});
 });
 
-// Leaderboard route
+// Leaderboard Route
 app.get("/api/leaderboard", async (req, res) => {
 	const type = req.query.type || "global";
 	try {
@@ -108,7 +113,7 @@ app.get("/", (req, res) => {
 	res.send("Backend is running!");
 });
 
-// Start socket server
+// Start Socket server
 initSocket(server);
 
 const PORT = process.env.PORT || 4000;
