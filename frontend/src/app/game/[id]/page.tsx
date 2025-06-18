@@ -116,13 +116,7 @@ export default function GamePage() {
 							};
 						}
 						if (shipId !== undefined && c.shipId === shipId && sunk) {
-							return {
-								...c,
-								status: c.status,
-								revealed: c.revealed,
-								shipId: c.shipId,
-								sunk: true,
-							};
+							return { ...c, sunk: true };
 						}
 						return c;
 					})
