@@ -119,6 +119,8 @@ export default function GamePage() {
 							return {
 								...c,
 								status: c.status,
+								revealed: c.revealed,
+								shipId: c.shipId,
 								sunk: true,
 							};
 						}
