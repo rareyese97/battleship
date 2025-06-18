@@ -117,14 +117,12 @@ function initSocket(server) {
 			const match = matchStore.getMatch(matchId);
 			if (!match || match.status !== "active") return;
 
-			const attackerEntry = Object.values(match.players).find((p) => p.socket.id === socket.id);
-			const defenderEntry = Object.values(match.players).find((p) => p.socket.id !== socket.id);
+			const attacker = match.players[userId];
+			const defender = Object.values(match.players).find((p) => p.user.id !== userId);
 
-			if (!attackerEntry || !defenderEntry || match.turn !== attackerEntry.user.id) return;
+			if (!attacker || !defender || match.turn !== userId) return;
 
-			const attackerId = attackerEntry.user.id;
-			const defenderId = defenderEntry.user.id;
-			const defenderBoard = match.players[defenderId].board;
+			const defenderBoard = defender.board;
 			const cell = defenderBoard[row]?.[col];
 
 			const hit = cell?.status === "ship";
@@ -153,35 +151,36 @@ function initSocket(server) {
 				}
 			}
 
-			attackerEntry.socket.emit("bomb_result", {
+			attacker.socket.emit("bomb_result", {
 				row,
 				col,
 				hit,
 				yourSide: "enemy",
 				shipId,
 				sunk,
-				sunkShipCells: sunk ? sunkShipCells : [],
+				sunkShipCells,
 			});
-			defenderEntry.socket.emit("bomb_result", {
+
+			defender.socket.emit("bomb_result", {
 				row,
 				col,
 				hit,
 				yourSide: "own",
 				shipId,
 				sunk,
-				sunkShipCells: sunk ? sunkShipCells : [],
+				sunkShipCells,
 			});
 
 			const allSunk = defenderBoard.flat().every((cell) => cell.status !== "ship");
 			if (allSunk) {
-				const winnerName = attackerEntry.user.username;
-				attackerEntry.socket.emit("game_over", { winner: winnerName });
-				defenderEntry.socket.emit("game_over", { winner: winnerName });
-				recordMatchResult(attackerId, defenderId).catch(console.error);
+				const winnerName = attacker.user.username;
+				attacker.socket.emit("game_over", { winner: winnerName });
+				defender.socket.emit("game_over", { winner: winnerName });
+				recordMatchResult(attacker.user.id, defender.user.id).catch(console.error);
 				matchStore.removeMatch(matchId);
 			} else if (!hit) {
-				match.turn = defenderId;
-				defenderEntry.socket.emit("your_turn");
+				match.turn = defender.user.id;
+				defender.socket.emit("your_turn");
 			}
 		});
 
