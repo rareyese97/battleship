@@ -138,9 +138,9 @@ export default function HubPage() {
 	};
 
 	const handleDoubleClick = (index: number) => {
-		const rotated = {
+		const rotated: ShipPlacement = {
 			...fleet[index],
-			direction: fleet[index].direction === "horizontal" ? "vertical" : "horizontal",
+			direction: (fleet[index].direction === "horizontal" ? "vertical" : "horizontal") as "horizontal" | "vertical",
 		};
 		if (!isPlacementValid(rotated, index)) return;
 		const copy = [...fleet];
@@ -184,7 +184,7 @@ export default function HubPage() {
 											width: ship.direction === "horizontal" ? `${ship.size * 32}px` : "32px",
 											height: ship.direction === "vertical" ? `${ship.size * 32}px` : "32px",
 											display: "flex",
-											flexDirection: ship.direction === "horizontal" ? "row" : "column",
+											flexDirection: (ship.direction === "horizontal" ? "row" : "column") as "row" | "column",
 											boxShadow: "0 0 8px rgba(0,0,0,0.5)",
 										};
 										return (

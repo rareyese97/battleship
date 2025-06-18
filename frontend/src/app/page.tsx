@@ -9,11 +9,10 @@ import { CheckCircle, Mail, Lock, User, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import shipImage from "../../public/ship.png";
+import { Suspense } from "react";
 
 export default function HomePage() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
-	const verifiedParam = searchParams.get("verified");
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 	useEffect(() => {
@@ -48,14 +47,36 @@ export default function HomePage() {
 	const emailRegex = /^\S+@\S+\.\S+$/;
 	const passwordRegex = /^(?=.*\d).{8,}$/;
 
-	// Show toast if email was verified via link
-	useEffect(() => {
-		if (verifiedParam === "true") {
-			setShowToast(true);
-			window.history.replaceState({}, "", window.location.pathname);
-			setTimeout(() => setShowToast(false), 5000);
-		}
-	}, [verifiedParam]);
+	function VerifiedToast() {
+		const searchParams = useSearchParams();
+		const verifiedParam = searchParams.get("verified");
+		const [showToast, setShowToast] = useState(false);
+
+		useEffect(() => {
+			if (verifiedParam === "true") {
+				setShowToast(true);
+				window.history.replaceState({}, "", window.location.pathname);
+				setTimeout(() => setShowToast(false), 5000);
+			}
+		}, [verifiedParam]);
+
+		return (
+			<AnimatePresence>
+				{showToast && (
+					<motion.div
+						key="toast"
+						initial={{ opacity: 0, y: -20 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -20 }}
+						transition={{ duration: 0.3 }}
+						className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50"
+					>
+						Email verified!
+					</motion.div>
+				)}
+			</AnimatePresence>
+		);
+	}
 
 	const resetModals = () => {
 		setError("");
@@ -229,20 +250,9 @@ export default function HomePage() {
 	return (
 		<>
 			{/* Animated Toast */}
-			<AnimatePresence>
-				{showToast && (
-					<motion.div
-						key="toast"
-						initial={{ opacity: 0, y: -20 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: -20 }}
-						transition={{ duration: 0.3 }}
-						className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50"
-					>
-						Email verified!
-					</motion.div>
-				)}
-			</AnimatePresence>
+			<Suspense fallback={null}>
+				<VerifiedToast />
+			</Suspense>
 
 			<div className="min-h-screen flex items-center justify-center bg-gray-900  bg-grid p-8">
 				<div className="max-w-5xl w-full space-y-12">

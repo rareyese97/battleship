@@ -121,7 +121,7 @@ export default function GamePage() {
 						if (i === row && j === col) {
 							return {
 								...c,
-								status: hit ? "hit" : "miss",
+								status: (hit ? "hit" : "miss") as "empty" | "miss" | "hit" | "ship",
 								revealed: true,
 								shipId: shipId !== undefined ? shipId : c.shipId,
 								sunk: sunk ?? c.sunk,
@@ -145,16 +145,37 @@ export default function GamePage() {
 				setEnemyBoard(newBoard);
 				if (!hit) setIsYourTurn(false);
 			} else {
-				setYourBoard(updateBoard);
+				const newBoard = updateBoard(yourBoard);
+				setYourBoard(newBoard);
 			}
 		});
 
 		socket.on("ship_sunk", ({ shipId }) => {
 			setEnemyBoard((prevBoard) =>
-				prevBoard.map((row) => row.map((cell) => (cell.shipId === shipId ? { ...cell, sunk: true } : cell)))
+				prevBoard.map((row) =>
+					row.map((cell) =>
+						cell.shipId === shipId
+							? {
+									...cell,
+									status: cell.status as "empty" | "miss" | "hit" | "ship",
+									sunk: true,
+							  }
+							: cell
+					)
+				)
 			);
 			setYourBoard((prevBoard) =>
-				prevBoard.map((row) => row.map((cell) => (cell.shipId === shipId ? { ...cell, sunk: true } : cell)))
+				prevBoard.map((row) =>
+					row.map((cell) =>
+						cell.shipId === shipId
+							? {
+									...cell,
+									status: cell.status as "empty" | "miss" | "hit" | "ship",
+									sunk: true,
+							  }
+							: cell
+					)
+				)
 			);
 		});
 
