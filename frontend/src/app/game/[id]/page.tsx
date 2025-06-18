@@ -77,7 +77,7 @@ export default function GamePage() {
 	useEffect(() => {
 		if (!user || !matchId) return;
 
-		const socket = io(backendUrl, {
+		const socket = io("https://api.sinkthatship.com", {
 			withCredentials: true,
 			transports: ["websocket"],
 			query: { userId: user.id },
