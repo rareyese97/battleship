@@ -7,6 +7,8 @@ import ChatBubble from "../../components/ChatBubble";
 import "../../hub/water.css";
 import "../../globals.css";
 import { initSocket } from "../../lib/sockets";
+import { Socket } from "socket.io-client";
+
 
 interface CellState {
 	status: "empty" | "miss" | "hit" | "ship";

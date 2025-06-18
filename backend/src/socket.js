@@ -13,17 +13,10 @@ const allowedOrigins = [
 function initSocket(server) {
 	const io = new Server(server, {
 		cors: {
-			origin: function (origin, callback) {
-				if (!origin) return callback(null, true);
-
-				if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
-					return callback(null, true);
-				} else {
-					return callback(new Error("Not allowed by CORS (socket.io)"));
-				}
-			},
+			origin: allowedOrigins,
 			credentials: true,
 		},
+		path: "/socket.io", // Required for correct proxying (Render/Vercel/Nginx)
 	});
 
 	async function recordMatchResult(winnerId, loserId) {
@@ -42,6 +35,7 @@ function initSocket(server) {
 	}
 
 	io.on("connection", (socket) => {
+		console.log("🔌 New client connected:", socket.id);
 
 		const userId = parseInt(socket.handshake.query.userId, 10);
 		if (!userId) {
@@ -198,6 +192,7 @@ function initSocket(server) {
 		});
 	});
 
+	console.log("✅ Socket.IO initialized");
 	return io;
 }
 
