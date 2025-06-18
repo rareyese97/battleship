@@ -2,11 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import io, { Socket } from "socket.io-client";
 import { AnimatePresence, motion } from "framer-motion";
 import ChatBubble from "../../components/ChatBubble";
 import "../../hub/water.css";
 import "../../globals.css";
+import { initSocket } from "../../lib/sockets";
 
 interface CellState {
 	status: "empty" | "miss" | "hit" | "ship";
@@ -77,11 +77,8 @@ export default function GamePage() {
 	useEffect(() => {
 		if (!user || !matchId) return;
 
-		const socket = io("https://api.sinkthatship.com", {
-			withCredentials: true,
-			transports: ["polling", "websocket"],
-			query: { userId: user.id },
-		});
+		const socket = initSocket(user.id);
+
 		socketRef.current = socket;
 
 		socket.on("connect", () => {
