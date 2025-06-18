@@ -23,6 +23,15 @@ interface ShipPlacement {
 	direction: "horizontal" | "vertical";
 }
 
+interface BombResultPayload {
+	row: number;
+	col: number;
+	hit: boolean;
+	yourSide: "your" | "enemy";
+	shipId?: number;
+	sunk?: boolean;
+}
+
 const createEmptyBoard = (): BoardState =>
 	Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => ({ status: "empty", revealed: false })));
 
@@ -101,7 +110,9 @@ export default function GamePage() {
 			showToast("Your turn!");
 		});
 
-		socket.on("bomb_result", ({ row, col, hit, yourSide, shipId, sunk }: any) => {
+		socket.on("bomb_result", (payload: BombResultPayload) => {
+		const { row, col, hit, yourSide, shipId, sunk } = payload;
+
 			setLastTarget([row, col]);
 
 			const updateBoard = (board: BoardState) =>
