@@ -114,7 +114,7 @@ export default function GamePage() {
 						if (i === row && j === col) {
 							return {
 								...c,
-								status: hit ? "hit" : "miss",
+								status: (hit ? "hit" : "miss") as "empty" | "miss" | "hit" | "ship",
 								revealed: true,
 								shipId: shipId !== undefined ? shipId : c.shipId,
 								sunk: sunk ?? c.sunk,
