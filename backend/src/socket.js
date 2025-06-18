@@ -117,8 +117,8 @@ function initSocket(server) {
 			const match = matchStore.getMatch(matchId);
 			if (!match || match.status !== "active") return;
 
-			const attackerId = parseInt(Object.keys(match.players).find((id) => match.players[id].socket.id === socket.id));
-			const defenderId = parseInt(Object.keys(match.players).find((id) => parseInt(id) !== attackerId));
+			const attackerId = Object.values(match.players).find((p) => p.socket.id === socket.id)?.user.id;
+			const defenderId = Object.values(match.players).find((p) => p.user.id !== attackerId)?.user.id;
 
 			if (!attackerId || !defenderId || match.turn !== attackerId) return;
 
