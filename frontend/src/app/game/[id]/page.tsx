@@ -6,8 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import ChatBubble from "../../components/ChatBubble";
 import "../../hub/water.css";
 import "../../globals.css";
-import { initSocket } from "../../lib/sockets";
-import { Socket } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 interface CellState {
 	status: "empty" | "miss" | "hit" | "ship";
@@ -48,6 +47,7 @@ export default function GamePage() {
 	const [gameOver, setGameOver] = useState(false);
 	const [result, setResult] = useState<"win" | "lose" | "disconnect" | null>(null);
 	const [toastMsg, setToastMsg] = useState<string | null>(null);
+
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 	useEffect(() => {
@@ -77,15 +77,21 @@ export default function GamePage() {
 	useEffect(() => {
 		if (!user || !matchId) return;
 
-		const socket = initSocket(user.id);
+		const socket = io("https://api.sinkthatship.com", {
+			withCredentials: true,
+			transports: ["websocket"],
+			query: { userId: user.id },
+		});
+
 		socketRef.current = socket;
 
 		socket.on("connect", () => {
-			console.log("🟢 Socket connected, joining match:", matchId);
+			console.log("🟢 Socket connected:", socket.id);
 			socket.emit("join_match", { matchId, userId: user.id, board: yourBoard });
 		});
 
 		socket.on("opponent_info", (o: any) => {
+			console.log("🟢 Opponent info received:", o);
 			setOpponent(o);
 		});
 
@@ -146,6 +152,9 @@ export default function GamePage() {
 				showToast(outcome === "win" ? "You win!" : "You lose.");
 			}
 		});
+
+		// Place ships right after join
+		socket.emit("place_ships", { matchId, userId: user.id, board: yourBoard });
 
 		return () => {
 			if (socketRef.current) {
