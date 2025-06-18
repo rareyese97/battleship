@@ -103,6 +103,7 @@ export default function GamePage() {
 
 		socket.on("bomb_result", ({ row, col, hit, yourSide, shipId, sunk }: any) => {
 			setLastTarget([row, col]);
+
 			const updateBoard = (board: BoardState) =>
 				board.map((rArr, i) =>
 					rArr.map((c, j) => {
@@ -123,11 +124,9 @@ export default function GamePage() {
 				);
 
 			if (yourSide === "enemy") {
-				setEnemyBoard((prevBoard) => {
-					const newBoard = updateBoard(prevBoard);
-					if (!hit) setIsYourTurn(false);
-					return newBoard;
-				});
+				const newBoard = updateBoard(enemyBoard);
+				setEnemyBoard(newBoard);
+				if (!hit) setIsYourTurn(false);
 			} else {
 				setYourBoard(updateBoard);
 			}
@@ -160,7 +159,7 @@ export default function GamePage() {
 				socketRef.current.disconnect();
 			}
 		};
-	}, [user, matchId]);
+	}, [user, matchId, yourBoard, backendUrl]);
 
 	const clickEnemyCell = (r: number, c: number) => {
 		if (!isYourTurn || gameOver) return;
