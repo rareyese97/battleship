@@ -15,8 +15,11 @@ const prisma = new PrismaClient();
 const { initSocket } = require("./socket");
 
 // Allowed Origins
-const allowedOrigins = ["http://localhost:3000", "https://sinkthatship.com"];
-
+const allowedOrigins = [
+	"http://localhost:3000",
+	"https://sinkthatship.com",
+	"https://www.sinkthatship.com",
+];
 // CORS Middleware
 app.use(
 	cors({
