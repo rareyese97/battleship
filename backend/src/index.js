@@ -32,7 +32,6 @@ app.use(
 			if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
 				return callback(null, true);
 			} else {
-				console.log("❌ Blocked CORS origin:", origin);
 				return callback(new Error("Not allowed by CORS"));
 			}
 		},

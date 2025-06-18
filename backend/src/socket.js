@@ -19,7 +19,6 @@ function initSocket(server) {
 				if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
 					return callback(null, true);
 				} else {
-					console.log("❌ Blocked Socket.IO origin:", origin);
 					return callback(new Error("Not allowed by CORS (socket.io)"));
 				}
 			},
@@ -37,14 +36,12 @@ function initSocket(server) {
 				where: { id: loserId },
 				data: { losses: { increment: 1 } },
 			});
-			console.log(`🏆 Match result: ${winnerId} +1 win, ${loserId} +1 loss`);
 		} catch (err) {
 			console.error("Failed to record match result:", err);
 		}
 	}
 
 	io.on("connection", (socket) => {
-		console.log("🔌 New client connected:", socket.id);
 
 		const userId = parseInt(socket.handshake.query.userId, 10);
 		if (!userId) {
@@ -57,7 +54,6 @@ function initSocket(server) {
 				console.warn("find_match missing userId or username");
 				return;
 			}
-			console.log("📡 Received find_match from", userId);
 			matchStore.queuePlayer(userId, username, socket, io);
 		});
 
@@ -202,7 +198,6 @@ function initSocket(server) {
 		});
 	});
 
-	console.log("✅ Socket.IO initialized");
 	return io;
 }
 

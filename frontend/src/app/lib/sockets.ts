@@ -6,7 +6,7 @@ export const initSocket = (userId: number): Socket => {
 	if (!socket) {
 		socket = io("https://api.sinkthatship.com", {
 			withCredentials: true,
-			transports: ["websocket"],
+			transports: ["polling", "websocket"], 
 			query: { userId },
 		});
 	}
