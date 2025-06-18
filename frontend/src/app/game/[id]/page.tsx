@@ -9,7 +9,6 @@ import "../../globals.css";
 import { initSocket } from "../../lib/sockets";
 import { Socket } from "socket.io-client";
 
-
 interface CellState {
 	status: "empty" | "miss" | "hit" | "ship";
 	revealed?: boolean;
@@ -49,7 +48,6 @@ export default function GamePage() {
 	const [gameOver, setGameOver] = useState(false);
 	const [result, setResult] = useState<"win" | "lose" | "disconnect" | null>(null);
 	const [toastMsg, setToastMsg] = useState<string | null>(null);
-	const [lastTarget, setLastTarget] = useState<[number, number] | null>(null);
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 	useEffect(() => {
@@ -80,18 +78,16 @@ export default function GamePage() {
 		if (!user || !matchId) return;
 
 		const socket = initSocket(user.id);
-
 		socketRef.current = socket;
 
 		socket.on("connect", () => {
+			console.log("🟢 Socket connected, joining match:", matchId);
 			socket.emit("join_match", { matchId, userId: user.id, board: yourBoard });
 		});
 
 		socket.on("opponent_info", (o: any) => {
 			setOpponent(o);
 		});
-
-		socket.emit("place_ships", { matchId, userId: user.id, board: yourBoard });
 
 		socket.on("disconnect", () => {
 			showToast("Disconnected from match.");
@@ -112,70 +108,31 @@ export default function GamePage() {
 		socket.on("bomb_result", (payload: BombResultPayload) => {
 			const { row, col, hit, yourSide, shipId, sunk } = payload;
 
-			setLastTarget([row, col]);
-
 			const updateBoard = (board: BoardState) =>
 				board.map((rArr, i) =>
 					rArr.map((c, j) => {
 						if (i === row && j === col) {
 							return {
 								...c,
-								status: (hit ? "hit" : "miss") as "empty" | "miss" | "hit" | "ship",
+								status: hit ? "hit" : "miss",
 								revealed: true,
 								shipId: shipId !== undefined ? shipId : c.shipId,
 								sunk: sunk ?? c.sunk,
 							};
 						}
 						if (shipId !== undefined && c.shipId === shipId && sunk) {
-							return {
-								...c,
-								status: c.status as "empty" | "miss" | "hit" | "ship",
-								revealed: c.revealed,
-								shipId: c.shipId,
-								sunk: true,
-							};
+							return { ...c, sunk: true };
 						}
 						return c;
 					})
 				);
 
 			if (yourSide === "enemy") {
-				const newBoard = updateBoard(enemyBoard);
-				setEnemyBoard(newBoard);
+				setEnemyBoard(updateBoard(enemyBoard));
 				if (!hit) setIsYourTurn(false);
 			} else {
-				const newBoard = updateBoard(yourBoard);
-				setYourBoard(newBoard);
+				setYourBoard(updateBoard(yourBoard));
 			}
-		});
-
-		socket.on("ship_sunk", ({ shipId }) => {
-			setEnemyBoard((prevBoard) =>
-				prevBoard.map((row) =>
-					row.map((cell) =>
-						cell.shipId === shipId
-							? {
-									...cell,
-									status: cell.status as "empty" | "miss" | "hit" | "ship",
-									sunk: true,
-							  }
-							: cell
-					)
-				)
-			);
-			setYourBoard((prevBoard) =>
-				prevBoard.map((row) =>
-					row.map((cell) =>
-						cell.shipId === shipId
-							? {
-									...cell,
-									status: cell.status as "empty" | "miss" | "hit" | "ship",
-									sunk: true,
-							  }
-							: cell
-					)
-				)
-			);
 		});
 
 		socket.on("game_over", ({ winner, reason }) => {
@@ -196,7 +153,7 @@ export default function GamePage() {
 				socketRef.current.disconnect();
 			}
 		};
-	}, [user, matchId, yourBoard, backendUrl]);
+	}, [user, matchId, yourBoard]);
 
 	const clickEnemyCell = (r: number, c: number) => {
 		if (!isYourTurn || gameOver) return;
