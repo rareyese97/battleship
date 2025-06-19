@@ -210,22 +210,18 @@ export default function GamePage() {
 						{row.map((cell, ci) => {
 							const isVisible = cell.revealed || cell.sunk || !clickable;
 							const cellClasses = cell.sunk
-								? "bg-red-600 animate-strong-pulse transition duration-150"
-								: cell.status === "hit"
-								? "bg-red-600"
-								: cell.status === "miss"
-								? "bg-white"
-								: cell.status === "ship" && isVisible
-								? "bg-blue-500"
-								: "bg-transparent";
+								? "w-8 h-8 relative water-effect bg-red-600 animate-strong-pulse transition duration-150 cursor-default"
+								: "w-8 h-8 border border-white/30 relative water-effect " +
+								  (cell.status === "hit"
+										? "bg-red-600"
+										: cell.status === "miss"
+										? "bg-white"
+										: cell.status === "ship" && isVisible
+										? "bg-blue-500"
+										: "bg-transparent") +
+								  (clickable ? " cursor-pointer" : " cursor-default");
 							return (
-								<td
-									key={ci}
-									className={`w-8 h-8 border border-white/30 relative water-effect ${cellClasses} ${
-										clickable ? "cursor-pointer" : "cursor-default"
-									}`}
-									onClick={() => clickable && clickEnemyCell(ri, ci)}
-								>
+								<td key={ci} className={cellClasses} onClick={() => clickable && clickEnemyCell(ri, ci)}>
 									{cell.sunk && <div className="sunk-label">SUNK!</div>}
 								</td>
 							);
