@@ -1,14 +1,29 @@
-// frontend/tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
 	content: [
-		"./src/**/*.{js,ts,jsx,tsx}",
 		"./app/**/*.{js,ts,jsx,tsx}",
-		// etc
+		"./components/**/*.{js,ts,jsx,tsx}",
+		"./pages/**/*.{js,ts,jsx,tsx}",
+		"./src/**/*.{js,ts,jsx,tsx}",
 	],
-	safelist: ["animate-strong-pulse"],
 	theme: {
-		extend: {},
+		extend: {
+			animation: {
+				"strong-pulse": "strong-pulse 1s infinite",
+			},
+			keyframes: {
+				"strong-pulse": {
+					"0%, 100%": {
+						backgroundColor: "#dc2626",
+						boxShadow: "0 0 10px #facc15, 0 0 20px #facc15",
+					},
+					"50%": {
+						backgroundColor: "#b91c1c",
+						boxShadow: "0 0 20px #facc15, 0 0 30px #facc15",
+					},
+				},
+			},
+		},
 	},
 	plugins: [],
 };
