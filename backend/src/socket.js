@@ -66,6 +66,9 @@ function initSocket(server) {
 			match.players[userId].socket = socket;
 			match.players[userId].board = board;
 
+			// CLEAR disconnectedAt — player is now back
+			delete match.players[userId].disconnectedAt;
+
 			const players = Object.values(match.players);
 			if (players.length === 2 && players[0].socket && players[1].socket && players[0].board && players[1].board) {
 				const [p1, p2] = players;

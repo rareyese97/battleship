@@ -58,18 +58,47 @@ function removeBySocket(socket) {
 		for (const playerId in match.players) {
 			const player = match.players[playerId];
 			if (player.socket.id === socket.id) {
-				// Notify opponent
-				const opponent = Object.values(match.players).find((p) => p.user.id !== player.user.id);
-				if (opponent?.socket) {
-					opponent.socket.emit("game_over", { winner: null, reason: "disconnect" });
-				}
-				// Remove match
-				delete matches[matchId];
-				console.log(`❌ Removed match ${matchId} due to disconnect`);
+				// Instead of immediately removing match → set a timeout
+
+				console.log(`⚠️ Player ${player.user.username} disconnected — waiting for reconnect...`);
+
+				player.disconnectedAt = Date.now();
+
+				setTimeout(() => {
+					// If player still disconnected after timeout, remove match
+					const stillMatch = matches[matchId];
+					if (!stillMatch) return;
+
+					const stillPlayer = stillMatch.players[playerId];
+					if (stillPlayer.socket.id === socket.id && stillPlayer.disconnectedAt) {
+						console.log(`❌ Player ${player.user.username} did not reconnect — ending match ${matchId}`);
+
+						// Notify opponent
+						const opponent = Object.values(match.players).find((p) => p.user.id !== player.user.id);
+						if (opponent?.socket) {
+							opponent.socket.emit("game_over", { winner: null, reason: "disconnect" });
+						}
+
+						// Remove match
+						delete matches[matchId];
+					}
+				}, 5000);
+
 				return;
 			}
 		}
 	}
+
+	// Else, remove from queue
+	for (let [userId, { socket: s }] of queue.entries()) {
+		if (s.id === socket.id) {
+			queue.delete(userId);
+			console.log(`❌ Removed player ${userId} from queue due to disconnect`);
+			return;
+		}
+	}
+}
+
 
 	// Else, remove from queue
 	for (let [userId, { socket: s }] of queue.entries()) {
