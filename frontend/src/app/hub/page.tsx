@@ -9,12 +9,13 @@ import {
 	DndContext,
 	DragEndEvent,
 	DragOverlay,
-	useSensors,
-	useSensor,
+	useDraggable,
+	useDroppable,
 	PointerSensor,
 	TouchSensor,
+	useSensor,
+	useSensors,
 } from "@dnd-kit/core";
-import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 interface User {
 	id: number;
@@ -144,10 +145,10 @@ export default function HubPage() {
 		if (!over) return;
 
 		const shipIndex = parseInt(active.id.toString().replace("ship-", ""));
-		const [targetRow, targetCol] = over.id.toString().replace("cell-", "").split("-").map(Number);
+		const [r, c] = over.id.toString().replace("cell-", "").split("-").map(Number);
 
 		const ship = fleet[shipIndex];
-		const updated = { ...ship, row: targetRow, col: targetCol };
+		const updated = { ...ship, row: r, col: c };
 
 		if (!isPlacementValid(updated, shipIndex)) return;
 
@@ -157,38 +158,24 @@ export default function HubPage() {
 	};
 
 	const handleDoubleClick = (index: number) => {
-		const current = fleet[index];
-		const newDirection = current.direction === "horizontal" ? "vertical" : "horizontal";
-
-		let newRow = current.row;
-		let newCol = current.col;
-
-		// If rotating vertical → check bounds
-		if (newDirection === "vertical") {
-			if (newRow + current.size > 10) {
-				newRow = 10 - current.size;
-			}
-		} else {
-			if (newCol + current.size > 10) {
-				newCol = 10 - current.size;
-			}
-		}
-
 		const rotated: ShipPlacement = {
-			...current,
-			direction: newDirection,
-			row: newRow,
-			col: newCol,
+			...fleet[index],
+			direction: (fleet[index].direction === "horizontal" ? "vertical" : "horizontal") as "horizontal" | "vertical",
 		};
-
 		if (!isPlacementValid(rotated, index)) return;
-
 		const copy = [...fleet];
 		copy[index] = rotated;
 		setFleet(copy);
 	};
 
-	const sensors = useSensors(useSensor(PointerSensor), useSensor(TouchSensor));
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: { delay: 150, tolerance: 5 },
+		}),
+		useSensor(TouchSensor, {
+			activationConstraint: { delay: 150, tolerance: 5 },
+		})
+	);
 
 	const GridCell = ({ r, c }: { r: number; c: number }) => {
 		const { setNodeRef, isOver } = useDroppable({
@@ -214,58 +201,55 @@ export default function HubPage() {
 				)}
 			>
 				{fleet.map((ship, index) => {
-					const isShipStartHere = (sr: number, sc: number, j: number) => sr === r && sc === c && j === 0;
+					const isStart = ship.row === r && ship.col === c;
+					if (!isStart) return null;
 
-					for (let j = 0; j < ship.size; j++) {
-						const sr = ship.row + (ship.direction === "vertical" ? j : 0);
-						const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
+					const {
+						attributes,
+						listeners,
+						setNodeRef: setDragRef,
+						transform,
+					} = useDraggable({
+						id: `ship-${index}`,
+					});
 
-						if (isShipStartHere(sr, sc, j)) {
-							const {
-								attributes,
-								listeners,
-								setNodeRef: setDragRef,
-							} = useDraggable({
-								id: `ship-${index}`,
-							});
+					const wrapperStyle: CSSProperties = {
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
+						height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
+						boxShadow: "0 0 8px rgba(0,0,0,0.5)",
+						transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+						touchAction: "none",
+						zIndex: 20,
+					};
 
-							const wrapperStyle: CSSProperties = {
-								position: "absolute",
-								top: 0,
-								left: 0,
-								width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
-								height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
-								boxShadow: "0 0 8px rgba(0,0,0,0.5)",
-								touchAction: "none",
-							};
-
-							return (
-								<div
-									key={index}
-									ref={setDragRef}
-									{...attributes}
-									{...listeners}
-									onDoubleClick={() => handleDoubleClick(index)}
-									onPointerDown={() => setActiveShipIndex(index)}
-									className="cursor-move hover:ring hover:ring-yellow-400"
-									style={wrapperStyle}
-								>
-									{Array.from({ length: ship.size }).map((_, i) => {
-										const cellStyle: CSSProperties = {
-											position: "absolute",
-											top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
-											left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
-											width: "2rem",
-											height: "2rem",
-											backgroundColor: "rgba(30, 64, 175, 0.8)",
-										};
-										return <div key={i} style={cellStyle} />;
-									})}
-								</div>
-							);
-						}
-					}
-					return null;
+					return (
+						<div
+							key={index}
+							ref={setDragRef}
+							{...attributes}
+							{...listeners}
+							onDoubleClick={() => handleDoubleClick(index)}
+							className="cursor-move hover:ring hover:ring-yellow-400"
+							style={wrapperStyle}
+							onMouseDown={() => setActiveShipIndex(index)}
+							onTouchStart={() => setActiveShipIndex(index)}
+						>
+							{Array.from({ length: ship.size }).map((_, i) => {
+								const cellStyle: CSSProperties = {
+									position: "absolute",
+									top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
+									left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
+									width: "2rem",
+									height: "2rem",
+									backgroundColor: "rgba(30, 64, 175, 0.8)",
+								};
+								return <div key={i} style={cellStyle} />;
+							})}
+						</div>
+					);
 				})}
 			</td>
 		);
@@ -312,7 +296,7 @@ export default function HubPage() {
 								<thead>
 									<tr>
 										<th></th>
-										{Array.from({ length: 10 }, (_, i) => (
+										{Array.from({ length: 10 }).map((_, i) => (
 											<th key={i} className="px-2 text-sm text-gray-400">
 												{String.fromCharCode(65 + i)}
 											</th>
