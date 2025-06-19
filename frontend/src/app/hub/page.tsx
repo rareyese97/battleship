@@ -180,7 +180,7 @@ export default function HubPage() {
 									const sr = ship.row + (ship.direction === "vertical" ? j : 0);
 									const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
 									if (sr === r && sc === c && j === 0) {
-										const style: CSSProperties = {
+										const wrapperStyle: CSSProperties = {
 											position: "absolute",
 											top: 0,
 											left: 0,
@@ -195,12 +195,20 @@ export default function HubPage() {
 												draggable
 												onDragStart={() => setDraggedShipIndex(index)}
 												onDoubleClick={() => handleDoubleClick(index)}
-												className="absolute top-0 left-0 cursor-move hover:ring hover:ring-yellow-400"
-												style={style}
+												className="cursor-move hover:ring hover:ring-yellow-400"
+												style={wrapperStyle}
 											>
-												{Array.from({ length: ship.size }).map((_, i) => (
-													<div key={i} className="w-8 h-8" style={{ backgroundColor: "rgba(30, 64, 175, 0.8)" }} />
-												))}
+												{Array.from({ length: ship.size }).map((_, i) => {
+													const cellStyle: CSSProperties = {
+														position: "absolute",
+														top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
+														left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
+														width: "2rem",
+														height: "2rem",
+														backgroundColor: "rgba(30, 64, 175, 0.8)",
+													};
+													return <div key={i} style={cellStyle} />;
+												})}
 											</div>
 										);
 									}
