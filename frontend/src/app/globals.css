@@ -85,16 +85,17 @@ body {
 }
 
 @keyframes strong-pulse {
-  0%, 100% {
-    background-color: rgba(220, 38, 38, 0.8); /* red */
-    box-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 0 0 20px rgba(250, 204, 21, 0.8);
-  }
-  50% {
-    background-color: rgba(185, 28, 28, 0.5); 
-    box-shadow: 0 0 20px rgba(250, 204, 21, 1), 0 0 30px rgba(250, 204, 21, 1);
-  }
+	0%,
+	100% {
+		background-color: rgba(220, 38, 38, 0.85); /* red */
+		box-shadow: 0 0 6px rgba(220, 38, 38, 0.6), 0 0 10px rgba(220, 38, 38, 0.5);
+	}
+	50% {
+		background-color: rgba(185, 28, 28, 0.6); /* darker red */
+		box-shadow: 0 0 8px rgba(220, 38, 38, 0.7), 0 0 12px rgba(220, 38, 38, 0.6);
+	}
 }
 
 .animate-strong-pulse {
-  animation: strong-pulse 1.2s ease-in-out infinite; 
+	animation: strong-pulse 1.5s ease-in-out infinite;
 }
