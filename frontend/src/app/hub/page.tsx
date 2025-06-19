@@ -5,7 +5,18 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import "./water.css";
 import { getSocket, initSocket } from "../lib/sockets";
-import { DndContext, DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
+import {
+	DndContext,
+	DragEndEvent,
+	DragOverlay,
+	useDraggable,
+	useDroppable,
+	PointerSensor,
+	TouchSensor,
+	MouseSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
 
 interface User {
 	id: number;
@@ -48,6 +59,8 @@ export default function HubPage() {
 	const [fleet, setFleet] = useState<ShipPlacement[]>(getInitialFleet());
 	const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
 	const [searching, setSearching] = useState(false);
+	const [activeShipIndex, setActiveShipIndex] = useState<number | null>(null); // for DragOverlay
+
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 	useEffect(() => {
@@ -128,6 +141,8 @@ export default function HubPage() {
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
+		setActiveShipIndex(null);
+
 		if (!over) return;
 
 		const shipIndex = parseInt(active.id.toString().replace("ship-", ""));
@@ -154,6 +169,7 @@ export default function HubPage() {
 		setFleet(copy);
 	};
 
+	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(PointerSensor));
 	const GridCell = ({ r, c }: { r: number; c: number }) => {
 		const { setNodeRef, isOver } = useDroppable({
 			id: `cell-${r}-${c}`,
@@ -214,6 +230,8 @@ export default function HubPage() {
 									onDoubleClick={() => handleDoubleClick(index)}
 									className="cursor-move hover:ring hover:ring-yellow-400"
 									style={wrapperStyle}
+									onMouseDown={() => setActiveShipIndex(index)}
+									onTouchStart={() => setActiveShipIndex(index)}
 								>
 									{Array.from({ length: ship.size }).map((_, i) => {
 										const cellStyle: CSSProperties = {
@@ -236,6 +254,32 @@ export default function HubPage() {
 		);
 	};
 
+	const renderShipOverlay = () => {
+		if (activeShipIndex === null) return null;
+		const ship = fleet[activeShipIndex];
+		const style: CSSProperties = {
+			width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
+			height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
+			display: "flex",
+			flexDirection: ship.direction === "horizontal" ? "row" : "column",
+		};
+		return (
+			<div style={style}>
+				{Array.from({ length: ship.size }).map((_, i) => (
+					<div
+						key={i}
+						style={{
+							width: "2rem",
+							height: "2rem",
+							backgroundColor: "rgba(30, 64, 175, 0.8)",
+							boxShadow: "0 0 8px rgba(0,0,0,0.5)",
+						}}
+					/>
+				))}
+			</div>
+		);
+	};
+
 	if (!user) return null;
 
 	return (
@@ -246,7 +290,7 @@ export default function HubPage() {
 					<p className="text-gray-300">Drag ships directly from the board. Double-click a ship to rotate it.</p>
 
 					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
-						<DndContext onDragEnd={handleDragEnd}>
+						<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
 							<table className="border-collapse mx-auto">
 								<thead>
 									<tr>
@@ -269,6 +313,7 @@ export default function HubPage() {
 									))}
 								</tbody>
 							</table>
+							<DragOverlay>{renderShipOverlay()}</DragOverlay>
 						</DndContext>
 					</div>
 
@@ -285,6 +330,7 @@ export default function HubPage() {
 					</div>
 				</div>
 
+				{/* Leaderboard */}
 				<div className="space-y-4 pb-24">
 					<h3 className="text-2xl font-semibold mb-2">Global Leaderboard</h3>
 
