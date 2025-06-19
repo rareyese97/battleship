@@ -60,6 +60,7 @@ export default function HubPage() {
 	const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
 	const [searching, setSearching] = useState(false);
 	const [activeShipIndex, setActiveShipIndex] = useState<number | null>(null);
+	const [grabbedOffset, setGrabbedOffset] = useState<number>(0); // NEW
 
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -146,10 +147,20 @@ export default function HubPage() {
 		if (!over) return;
 
 		const shipIndex = parseInt(active.id.toString().replace("ship-", ""));
-		const [r, c] = over.id.toString().replace("cell-", "").split("-").map(Number);
+		const [dropR, dropC] = over.id.toString().replace("cell-", "").split("-").map(Number);
 
 		const ship = fleet[shipIndex];
-		const updated = { ...ship, row: r, col: c };
+
+		let newR = dropR;
+		let newC = dropC;
+
+		if (ship.direction === "vertical") {
+			newR = dropR - grabbedOffset;
+		} else {
+			newC = dropC - grabbedOffset;
+		}
+
+		const updated = { ...ship, row: newR, col: newC };
 
 		if (!isPlacementValid(updated, shipIndex)) return;
 
@@ -209,6 +220,7 @@ export default function HubPage() {
 								index={index}
 								ship={ship}
 								setActiveShipIndex={setActiveShipIndex}
+								setGrabbedOffset={setGrabbedOffset}
 								handleDoubleClick={handleDoubleClick}
 							/>
 						);
@@ -216,6 +228,74 @@ export default function HubPage() {
 					return null;
 				})}
 			</td>
+		);
+	};
+	const DraggableShip = ({
+		index,
+		ship,
+		setActiveShipIndex,
+		setGrabbedOffset,
+		handleDoubleClick,
+	}: {
+		index: number;
+		ship: ShipPlacement;
+		setActiveShipIndex: (i: number | null) => void;
+		setGrabbedOffset: (offset: number) => void;
+		handleDoubleClick: (i: number) => void;
+	}) => {
+		const { attributes, listeners, setNodeRef, transform } = useDraggable({
+			id: `ship-${index}`,
+		});
+
+		const wrapperStyle: CSSProperties = {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
+			height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
+			boxShadow: "0 0 8px rgba(0,0,0,0.5)",
+			transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+			touchAction: "none",
+		};
+
+		const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+			setActiveShipIndex(index);
+			// calculate clicked offset
+			const rect = (e.target as HTMLElement).getBoundingClientRect();
+			let offset = 0;
+			if (ship.direction === "horizontal") {
+				const clickX = ("clientX" in e ? e.clientX : e.touches[0].clientX) - rect.left;
+				offset = Math.floor(clickX / 32); // 32px = 2rem
+			} else {
+				const clickY = ("clientY" in e ? e.clientY : e.touches[0].clientY) - rect.top;
+				offset = Math.floor(clickY / 32);
+			}
+			setGrabbedOffset(offset);
+		};
+
+		return (
+			<div
+				ref={setNodeRef}
+				{...attributes}
+				{...listeners}
+				onDoubleClick={() => handleDoubleClick(index)}
+				onMouseDown={handleMouseDown}
+				onTouchStart={handleMouseDown}
+				className="cursor-move hover:ring hover:ring-yellow-400"
+				style={wrapperStyle}
+			>
+				{Array.from({ length: ship.size }).map((_, i) => {
+					const cellStyle: CSSProperties = {
+						position: "absolute",
+						top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
+						left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
+						width: "2rem",
+						height: "2rem",
+						backgroundColor: "rgba(30, 64, 175, 0.8)",
+					};
+					return <div key={i} style={cellStyle} />;
+				})}
+			</div>
 		);
 	};
 
@@ -327,58 +407,6 @@ export default function HubPage() {
 					</div>
 				</div>
 			</div>
-		</div>
-	);
-}
-
-function DraggableShip({
-	index,
-	ship,
-	setActiveShipIndex,
-	handleDoubleClick,
-}: {
-	index: number;
-	ship: ShipPlacement;
-	setActiveShipIndex: (i: number | null) => void;
-	handleDoubleClick: (i: number) => void;
-}) {
-	const { attributes, listeners, setNodeRef, transform } = useDraggable({
-		id: `ship-${index}`,
-	});
-
-	const wrapperStyle: CSSProperties = {
-		position: "absolute",
-		top: 0,
-		left: 0,
-		width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
-		height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
-		boxShadow: "0 0 8px rgba(0,0,0,0.5)",
-		transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-		touchAction: "none",
-	};
-
-	return (
-		<div
-			ref={setNodeRef}
-			{...attributes}
-			{...listeners}
-			onDoubleClick={() => handleDoubleClick(index)}
-			className="cursor-move hover:ring hover:ring-yellow-400"
-			style={wrapperStyle}
-			onMouseDown={() => setActiveShipIndex(index)}
-			onTouchStart={() => setActiveShipIndex(index)}
-		>
-			{Array.from({ length: ship.size }).map((_, i) => {
-				const cellStyle: CSSProperties = {
-					position: "absolute",
-					top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
-					left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
-					width: "2rem",
-					height: "2rem",
-					backgroundColor: "rgba(30, 64, 175, 0.8)",
-				};
-				return <div key={i} style={cellStyle} />;
-			})}
 		</div>
 	);
 }
