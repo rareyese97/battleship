@@ -111,33 +111,44 @@ export default function GamePage() {
 			showToast("Your turn!");
 		});
 
-		socket.on("bomb_result", (payload: BombResultPayload) => {
-			const { row, col, hit, yourSide, shipId, sunk } = payload;
+		socket.on("bomb_result", (payload: BombResultPayload & { sunkShipCells?: { row: number; col: number }[] }) => {
+			const { row, col, hit, yourSide, shipId, sunk, sunkShipCells = [] } = payload;
 
 			const updateBoard = (board: BoardState) =>
 				board.map((rArr, i) =>
 					rArr.map((c, j) => {
+						let newCell = c;
+
+						// Update this bombed cell
 						if (i === row && j === col) {
-							return {
+							newCell = {
 								...c,
-								status: (hit ? "hit" : "miss") as "empty" | "miss" | "hit" | "ship",
+								status: hit ? "hit" : "miss",
 								revealed: true,
 								shipId: shipId !== undefined ? shipId : c.shipId,
 								sunk: sunk ?? c.sunk,
 							};
 						}
-						if (shipId !== undefined && c.shipId === shipId && sunk) {
-							return { ...c, sunk: true };
+
+						// If ship is sunk — update ALL its cells
+						if (sunk && sunkShipCells.some((pos) => pos.row === i && pos.col === j)) {
+							newCell = {
+								...newCell,
+								sunk: true,
+								status: "hit", // ensure sunk cells stay red
+								revealed: true,
+							};
 						}
-						return c;
+
+						return newCell;
 					})
 				);
 
 			if (yourSide === "enemy") {
-				setEnemyBoard(updateBoard(enemyBoard));
+				setEnemyBoard((prev) => updateBoard(prev));
 				if (!hit) setIsYourTurn(false);
 			} else {
-				setYourBoard(updateBoard(yourBoard));
+				setYourBoard((prev) => updateBoard(prev));
 			}
 		});
 
@@ -163,7 +174,7 @@ export default function GamePage() {
 			}
 		};
 	}, [user, matchId]);
-	
+
 	const clickEnemyCell = (r: number, c: number) => {
 		if (!isYourTurn || gameOver) return;
 		if (enemyBoard[r][c]?.revealed) return;
