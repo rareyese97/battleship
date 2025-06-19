@@ -171,7 +171,7 @@ export default function HubPage() {
 							}}
 							onDragOver={(e) => e.preventDefault()}
 							className={clsx(
-								"w-8 h-8 border border-white/30 relative water-effect",
+								"w-8 h-8 border border-white/30 relative overflow-hidden water-effect",
 								isOccupied ? "bg-blue-500" : "bg-transparent"
 							)}
 						>
