@@ -162,8 +162,8 @@ export default function GamePage() {
 				socketRef.current.disconnect();
 			}
 		};
-	}, [user, matchId, yourBoard]);
-
+	}, [user, matchId]);
+	
 	const clickEnemyCell = (r: number, c: number) => {
 		if (!isYourTurn || gameOver) return;
 		if (enemyBoard[r][c]?.revealed) return;
