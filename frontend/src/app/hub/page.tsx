@@ -13,6 +13,7 @@ import {
 	useDroppable,
 	PointerSensor,
 	TouchSensor,
+	MouseSensor,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
@@ -59,6 +60,7 @@ export default function HubPage() {
 	const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
 	const [searching, setSearching] = useState(false);
 	const [activeShipIndex, setActiveShipIndex] = useState<number | null>(null);
+	const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -145,7 +147,11 @@ export default function HubPage() {
 		if (!over) return;
 
 		const shipIndex = parseInt(active.id.toString().replace("ship-", ""));
-		const [r, c] = over.id.toString().replace("cell-", "").split("-").map(Number);
+		const [r, c] = over.id
+			.toString()
+			.replace("cell-", "")
+			.split("-")
+			.map(Number);
 
 		const ship = fleet[shipIndex];
 		const updated = { ...ship, row: r, col: c };
@@ -160,7 +166,7 @@ export default function HubPage() {
 	const handleDoubleClick = (index: number) => {
 		const rotated: ShipPlacement = {
 			...fleet[index],
-			direction: (fleet[index].direction === "horizontal" ? "vertical" : "horizontal") as "horizontal" | "vertical",
+			direction: fleet[index].direction === "horizontal" ? "vertical" : "horizontal",
 		};
 		if (!isPlacementValid(rotated, index)) return;
 		const copy = [...fleet];
@@ -169,14 +175,22 @@ export default function HubPage() {
 	};
 
 	const sensors = useSensors(
-		useSensor(PointerSensor, {
-			activationConstraint: { delay: 200, tolerance: 5 },
-		}),
-		useSensor(TouchSensor, {
-			activationConstraint: { delay: 200, tolerance: 5 },
-		})
+		useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+		useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+		useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
 	);
-	const DraggableShip = ({ index, ship }: { index: number; ship: ShipPlacement }) => {
+
+	const DraggableShip = ({
+		index,
+		ship,
+		onDoubleClick,
+	}: {
+		index: number;
+		ship: ShipPlacement;
+		r: number;
+		c: number;
+		onDoubleClick: (index: number) => void;
+	}) => {
 		const { attributes, listeners, setNodeRef, transform } = useDraggable({
 			id: `ship-${index}`,
 		});
@@ -197,7 +211,7 @@ export default function HubPage() {
 				ref={setNodeRef}
 				{...attributes}
 				{...listeners}
-				onDoubleClick={() => handleDoubleClick(index)}
+				onDoubleClick={() => onDoubleClick(index)}
 				className="cursor-move hover:ring hover:ring-yellow-400"
 				style={wrapperStyle}
 				onMouseDown={() => setActiveShipIndex(index)}
@@ -242,14 +256,21 @@ export default function HubPage() {
 				)}
 			>
 				{fleet.map((ship, index) => {
-					const isShipStartHere = (sr: number, sc: number, j: number) => sr === r && sc === c && j === 0;
-
 					for (let j = 0; j < ship.size; j++) {
 						const sr = ship.row + (ship.direction === "vertical" ? j : 0);
 						const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
 
-						if (isShipStartHere(sr, sc, j)) {
-							return <DraggableShip key={index} index={index} ship={ship} />;
+						if (sr === r && sc === c && j === 0) {
+							return (
+								<DraggableShip
+									key={index}
+									index={index}
+									ship={ship}
+									r={r}
+									c={c}
+									onDoubleClick={handleDoubleClick}
+								/>
+							);
 						}
 					}
 					return null;
@@ -284,7 +305,6 @@ export default function HubPage() {
 		);
 	};
 
-	// -- full return --
 	if (!user) return null;
 
 	return (
@@ -300,7 +320,7 @@ export default function HubPage() {
 								<thead>
 									<tr>
 										<th></th>
-										{Array.from({ length: 10 }, (_, i) => (
+										{Array.from({ length: 10 }).map((_, i) => (
 											<th key={i} className="px-2 text-sm text-gray-400">
 												{String.fromCharCode(65 + i)}
 											</th>
@@ -358,7 +378,9 @@ export default function HubPage() {
 										<td className="px-4 py-2">{entry.wins}</td>
 										<td className="px-4 py-2">{entry.losses}</td>
 										<td className="px-4 py-2">
-											{entry.losses === 0 ? entry.wins.toFixed(2) : (entry.wins / entry.losses).toFixed(2)}
+											{entry.losses === 0
+												? entry.wins.toFixed(2)
+												: (entry.wins / entry.losses).toFixed(2)}
 										</td>
 									</tr>
 								))}
