@@ -13,5 +13,5 @@
   background-image: radial-gradient(circle at 20% 20%, rgba(0, 100, 255, 0.15), transparent 80%),
                     radial-gradient(circle at 80% 80%, rgba(0, 150, 255, 0.2), transparent 80%);
   background-size: 200% 200%;
-  animation: water 3s ease-in-out infinite alternate;
+  animation: water 2s ease-in-out infinite alternate;
 }
