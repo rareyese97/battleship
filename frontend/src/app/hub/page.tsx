@@ -9,7 +9,6 @@ import {
 	DndContext,
 	DragEndEvent,
 	DragOverlay,
-	PointerSensor,
 	TouchSensor,
 	MouseSensor,
 	useSensor,
@@ -151,7 +150,6 @@ export default function HubPage() {
 		const [targetRow, targetCol] = over.id.toString().replace("cell-", "").split("-").map(Number);
 
 		const ship = fleet[shipIndex];
-
 		const offsetX = dragOffset ? dragOffset.x : 0;
 		const offsetY = dragOffset ? dragOffset.y : 0;
 
@@ -171,7 +169,7 @@ export default function HubPage() {
 	const handleDoubleClick = (index: number) => {
 		const rotated: ShipPlacement = {
 			...fleet[index],
-			direction: (fleet[index].direction === "horizontal" ? "vertical" : "horizontal") as "horizontal" | "vertical",
+			direction: fleet[index].direction === "horizontal" ? "vertical" : "horizontal",
 		};
 		if (!isPlacementValid(rotated, index)) return;
 		const copy = [...fleet];
@@ -180,15 +178,12 @@ export default function HubPage() {
 	};
 
 	const sensors = useSensors(
-		useSensor(MouseSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-		useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-		useSensor(PointerSensor)
+		useSensor(MouseSensor, { activationConstraint: { delay: 300, tolerance: 5 } }),
+		useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 5 } })
 	);
 
 	const GridCell = ({ r, c }: { r: number; c: number }) => {
-		const { setNodeRef, isOver } = useDroppable({
-			id: `cell-${r}-${c}`,
-		});
+		const { setNodeRef, isOver } = useDroppable({ id: `cell-${r}-${c}` });
 
 		const isOccupied = fleet.some((ship) => {
 			for (let j = 0; j < ship.size; j++) {
@@ -210,7 +205,6 @@ export default function HubPage() {
 				{fleet.map((ship, index) => {
 					const isShipStartHere = ship.row === r && ship.col === c;
 					if (!isShipStartHere) return null;
-
 					return (
 						<DraggableShip
 							key={index}
@@ -259,7 +253,9 @@ export default function HubPage() {
 			<div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
 				<div className="space-y-6">
 					<h2 className="text-4xl font-semibold">Hello, {user.username}</h2>
-					<p className="text-gray-300">Drag ships directly from the board. Double-click a ship to rotate it.</p>
+					<p className="text-gray-300">
+						Press and hold on the dark blue part of a ship to drag. Double-click a ship to rotate it.
+					</p>
 
 					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
 						<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -319,7 +315,7 @@ export default function HubPage() {
 							</thead>
 							<tbody>
 								{leaders.map((entry, i) => (
-									<tr key={entry.id} className="hover:bg-gray-700 ">
+									<tr key={entry.id} className="hover:bg-gray-700">
 										<td className="px-4 py-2">{i + 1}</td>
 										<td className="px-4 py-2">{entry.username}</td>
 										<td className="px-4 py-2">{entry.wins}</td>
@@ -338,23 +334,8 @@ export default function HubPage() {
 	);
 }
 
-// Extracted DraggableShip component
-function DraggableShip({
-	ship,
-	index,
-	onDoubleClick,
-	setActiveShipIndex,
-	setDragOffset,
-}: {
-	ship: ShipPlacement;
-	index: number;
-	onDoubleClick: (index: number) => void;
-	setActiveShipIndex: (index: number | null) => void;
-	setDragOffset: (offset: { x: number; y: number }) => void;
-}) {
-	const { attributes, listeners, setNodeRef, transform } = useDraggable({
-		id: `ship-${index}`,
-	});
+function DraggableShip({ ship, index, onDoubleClick, setActiveShipIndex, setDragOffset }: any) {
+	const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: `ship-${index}` });
 
 	const wrapperStyle: CSSProperties = {
 		position: "absolute",
@@ -377,10 +358,15 @@ function DraggableShip({
 			style={wrapperStyle}
 			onMouseDown={(e) => {
 				const cellSize = 32;
-				const offsetX = ship.direction === "horizontal" ? Math.floor(e.nativeEvent.offsetX / cellSize) : 0;
-				const offsetY = ship.direction === "vertical" ? Math.floor(e.nativeEvent.offsetY / cellSize) : 0;
+				const shipPartIndex =
+					ship.direction === "horizontal"
+						? Math.floor(e.nativeEvent.offsetX / cellSize)
+						: Math.floor(e.nativeEvent.offsetY / cellSize);
 				setActiveShipIndex(index);
-				setDragOffset({ x: offsetX, y: offsetY });
+				setDragOffset({
+					x: ship.direction === "horizontal" ? shipPartIndex : 0,
+					y: ship.direction === "vertical" ? shipPartIndex : 0,
+				});
 			}}
 			onTouchStart={() => {
 				setActiveShipIndex(index);
