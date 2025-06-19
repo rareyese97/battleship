@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import "./water.css";
 import { getSocket, initSocket } from "../lib/sockets";
+import { DndContext, DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
 
 interface User {
 	id: number;
@@ -46,7 +47,6 @@ export default function HubPage() {
 	const [user, setUser] = useState<User | null>(null);
 	const [fleet, setFleet] = useState<ShipPlacement[]>(getInitialFleet());
 	const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
-	const [draggedShipIndex, setDraggedShipIndex] = useState<number | null>(null);
 	const [searching, setSearching] = useState(false);
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -80,7 +80,7 @@ export default function HubPage() {
 
 		socket = initSocket(user.id);
 
-		socket.on("match_found", ({ matchId, opponentId }: { matchId: string; opponentId: number }) => {
+		socket.on("match_found", ({ matchId }: { matchId: string }) => {
 			router.push(`/game/${matchId}`);
 		});
 
@@ -126,15 +126,21 @@ export default function HubPage() {
 		return true;
 	};
 
-	const handleDrop = (r: number, c: number) => {
-		if (draggedShipIndex === null) return;
-		const ship = fleet[draggedShipIndex];
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		if (!over) return;
+
+		const shipIndex = parseInt(active.id.toString().replace("ship-", ""));
+		const [r, c] = over.id.toString().replace("cell-", "").split("-").map(Number);
+
+		const ship = fleet[shipIndex];
 		const updated = { ...ship, row: r, col: c };
-		if (!isPlacementValid(updated, draggedShipIndex)) return;
+
+		if (!isPlacementValid(updated, shipIndex)) return;
+
 		const copy = [...fleet];
-		copy[draggedShipIndex] = updated;
+		copy[shipIndex] = updated;
 		setFleet(copy);
-		setDraggedShipIndex(null);
 	};
 
 	const handleDoubleClick = (index: number) => {
@@ -148,78 +154,86 @@ export default function HubPage() {
 		setFleet(copy);
 	};
 
-	const renderGrid = () => {
-		return Array.from({ length: 10 }).map((_, r) => (
-			<tr key={r}>
-				<td className="px-2 text-gray-400 text-sm">{r + 1}</td>
-				{Array.from({ length: 10 }).map((_, c) => {
-					const isOccupied = fleet.some((ship) => {
-						for (let j = 0; j < ship.size; j++) {
-							const sr = ship.row + (ship.direction === "vertical" ? j : 0);
-							const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
-							if (sr === r && sc === c) return true;
-						}
-						return false;
+	const GridCell = ({ r, c }: { r: number; c: number }) => {
+		const { setNodeRef, isOver } = useDroppable({
+			id: `cell-${r}-${c}`,
+		});
+
+		const isOccupied = fleet.some((ship) => {
+			for (let j = 0; j < ship.size; j++) {
+				const sr = ship.row + (ship.direction === "vertical" ? j : 0);
+				const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
+				if (sr === r && sc === c) return true;
+			}
+			return false;
+		});
+
+		return (
+			<td
+				ref={setNodeRef}
+				className={clsx(
+					"w-8 h-8 border border-white/30 relative overflow-hidden water-effect",
+					isOccupied ? "bg-blue-500" : "bg-transparent",
+					isOver ? "ring-2 ring-yellow-400" : ""
+				)}
+			>
+				{fleet.map((ship, index) => {
+					const {
+						attributes,
+						listeners,
+						setNodeRef: setDragRef,
+						transform,
+					} = useDraggable({
+						id: `ship-${index}`,
 					});
 
-					return (
-						<td
-							key={c}
-							onDrop={(e) => {
-								e.preventDefault();
-								handleDrop(r, c);
-							}}
-							onDragOver={(e) => e.preventDefault()}
-							className={clsx(
-								"w-8 h-8 border border-white/30 relative overflow-hidden water-effect",
-								isOccupied ? "bg-blue-500" : "bg-transparent"
-							)}
-						>
-							{fleet.map((ship, index) => {
-								for (let j = 0; j < ship.size; j++) {
-									const sr = ship.row + (ship.direction === "vertical" ? j : 0);
-									const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
-									if (sr === r && sc === c && j === 0) {
-										const wrapperStyle: CSSProperties = {
-											position: "absolute",
-											top: 0,
-											left: 0,
-											width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
-											height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
-											boxShadow: "0 0 8px rgba(0,0,0,0.5)",
-										};
+					const wrapperStyle: CSSProperties = {
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
+						height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
+						boxShadow: "0 0 8px rgba(0,0,0,0.5)",
+						transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+						touchAction: "none",
+					};
 
-										return (
-											<div
-												key={index}
-												draggable
-												onDragStart={() => setDraggedShipIndex(index)}
-												onDoubleClick={() => handleDoubleClick(index)}
-												className="cursor-move hover:ring hover:ring-yellow-400"
-												style={wrapperStyle}
-											>
-												{Array.from({ length: ship.size }).map((_, i) => {
-													const cellStyle: CSSProperties = {
-														position: "absolute",
-														top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
-														left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
-														width: "2rem",
-														height: "2rem",
-														backgroundColor: "rgba(30, 64, 175, 0.8)",
-													};
-													return <div key={i} style={cellStyle} />;
-												})}
-											</div>
-										);
-									}
-								}
-								return null;
-							})}
-						</td>
-					);
+					const isShipStartHere = (sr: number, sc: number, j: number) => sr === r && sc === c && j === 0;
+
+					for (let j = 0; j < ship.size; j++) {
+						const sr = ship.row + (ship.direction === "vertical" ? j : 0);
+						const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
+
+						if (isShipStartHere(sr, sc, j)) {
+							return (
+								<div
+									key={index}
+									ref={setDragRef}
+									{...attributes}
+									{...listeners}
+									onDoubleClick={() => handleDoubleClick(index)}
+									className="cursor-move hover:ring hover:ring-yellow-400"
+									style={wrapperStyle}
+								>
+									{Array.from({ length: ship.size }).map((_, i) => {
+										const cellStyle: CSSProperties = {
+											position: "absolute",
+											top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
+											left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
+											width: "2rem",
+											height: "2rem",
+											backgroundColor: "rgba(30, 64, 175, 0.8)",
+										};
+										return <div key={i} style={cellStyle} />;
+									})}
+								</div>
+							);
+						}
+					}
+					return null;
 				})}
-			</tr>
-		));
+			</td>
+		);
 	};
 
 	if (!user) return null;
@@ -232,25 +246,36 @@ export default function HubPage() {
 					<p className="text-gray-300">Drag ships directly from the board. Double-click a ship to rotate it.</p>
 
 					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
-						<table className="border-collapse mx-auto">
-							<thead>
-								<tr>
-									<th></th>
-									{Array.from({ length: 10 }, (_, i) => (
-										<th key={i} className="px-2 text-sm text-gray-400">
-											{String.fromCharCode(65 + i)}
-										</th>
+						<DndContext onDragEnd={handleDragEnd}>
+							<table className="border-collapse mx-auto">
+								<thead>
+									<tr>
+										<th></th>
+										{Array.from({ length: 10 }, (_, i) => (
+											<th key={i} className="px-2 text-sm text-gray-400">
+												{String.fromCharCode(65 + i)}
+											</th>
+										))}
+									</tr>
+								</thead>
+								<tbody>
+									{Array.from({ length: 10 }).map((_, r) => (
+										<tr key={r}>
+											<td className="px-2 text-gray-400 text-sm">{r + 1}</td>
+											{Array.from({ length: 10 }).map((_, c) => (
+												<GridCell key={c} r={r} c={c} />
+											))}
+										</tr>
 									))}
-								</tr>
-							</thead>
-							<tbody>{renderGrid()}</tbody>
-						</table>
+								</tbody>
+							</table>
+						</DndContext>
 					</div>
 
 					<div className="flex justify-center">
 						<button
 							className={clsx(
-								"px-6 py-2 rounded-full  text-white cursor-pointer",
+								"px-6 py-2 rounded-full text-white cursor-pointer",
 								searching ? "bg-red-600 animate-pulse" : "bg-green-600"
 							)}
 							onClick={handleFindOpponent}
