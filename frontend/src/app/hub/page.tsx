@@ -13,7 +13,6 @@ import {
 	useDroppable,
 	PointerSensor,
 	TouchSensor,
-	MouseSensor,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
@@ -60,7 +59,6 @@ export default function HubPage() {
 	const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
 	const [searching, setSearching] = useState(false);
 	const [activeShipIndex, setActiveShipIndex] = useState<number | null>(null);
-	const [grabbedOffset, setGrabbedOffset] = useState<number>(0);
 
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -147,15 +145,10 @@ export default function HubPage() {
 		if (!over) return;
 
 		const shipIndex = parseInt(active.id.toString().replace("ship-", ""));
-		const [dropR, dropC] = over.id.toString().replace("cell-", "").split("-").map(Number);
+		const [r, c] = over.id.toString().replace("cell-", "").split("-").map(Number);
 
 		const ship = fleet[shipIndex];
-
-		// SNAP TO GRID — fix the offset issue!
-		let newR = ship.direction === "vertical" ? dropR - grabbedOffset : dropR;
-		let newC = ship.direction === "horizontal" ? dropC - grabbedOffset : dropC;
-
-		const updated = { ...ship, row: newR, col: newC };
+		const updated = { ...ship, row: r, col: c };
 
 		if (!isPlacementValid(updated, shipIndex)) return;
 
@@ -175,20 +168,15 @@ export default function HubPage() {
 		setFleet(copy);
 	};
 
-	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(PointerSensor));
-	const DraggableShip = ({
-		index,
-		ship,
-		setActiveShipIndex,
-		setGrabbedOffset,
-		handleDoubleClick,
-	}: {
-		index: number;
-		ship: ShipPlacement;
-		setActiveShipIndex: (i: number | null) => void;
-		setGrabbedOffset: (offset: number) => void;
-		handleDoubleClick: (i: number) => void;
-	}) => {
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: { delay: 200, tolerance: 5 },
+		}),
+		useSensor(TouchSensor, {
+			activationConstraint: { delay: 200, tolerance: 5 },
+		})
+	);
+	const DraggableShip = ({ index, ship }: { index: number; ship: ShipPlacement }) => {
 		const { attributes, listeners, setNodeRef, transform } = useDraggable({
 			id: `ship-${index}`,
 		});
@@ -204,31 +192,16 @@ export default function HubPage() {
 			touchAction: "none",
 		};
 
-		const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-			setActiveShipIndex(index);
-			// calculate clicked offset
-			const rect = (e.target as HTMLElement).getBoundingClientRect();
-			let offset = 0;
-			if (ship.direction === "horizontal") {
-				const clickX = ("clientX" in e ? e.clientX : e.touches[0].clientX) - rect.left;
-				offset = Math.floor(clickX / 32); // 32px = 2rem
-			} else {
-				const clickY = ("clientY" in e ? e.clientY : e.touches[0].clientY) - rect.top;
-				offset = Math.floor(clickY / 32);
-			}
-			setGrabbedOffset(offset);
-		};
-
 		return (
 			<div
 				ref={setNodeRef}
 				{...attributes}
 				{...listeners}
 				onDoubleClick={() => handleDoubleClick(index)}
-				onMouseDown={handleMouseDown}
-				onTouchStart={handleMouseDown}
 				className="cursor-move hover:ring hover:ring-yellow-400"
 				style={wrapperStyle}
+				onMouseDown={() => setActiveShipIndex(index)}
+				onTouchStart={() => setActiveShipIndex(index)}
 			>
 				{Array.from({ length: ship.size }).map((_, i) => {
 					const cellStyle: CSSProperties = {
@@ -276,16 +249,7 @@ export default function HubPage() {
 						const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
 
 						if (isShipStartHere(sr, sc, j)) {
-							return (
-								<DraggableShip
-									key={index}
-									index={index}
-									ship={ship}
-									setActiveShipIndex={setActiveShipIndex}
-									setGrabbedOffset={setGrabbedOffset}
-									handleDoubleClick={handleDoubleClick}
-								/>
-							);
+							return <DraggableShip key={index} index={index} ship={ship} />;
 						}
 					}
 					return null;
@@ -320,6 +284,7 @@ export default function HubPage() {
 		);
 	};
 
+	// -- full return --
 	if (!user) return null;
 
 	return (
