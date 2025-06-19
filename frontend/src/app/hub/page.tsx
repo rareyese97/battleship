@@ -9,13 +9,13 @@ import {
 	DndContext,
 	DragEndEvent,
 	DragOverlay,
-	useDraggable,
-	useDroppable,
 	PointerSensor,
 	TouchSensor,
 	MouseSensor,
 	useSensor,
 	useSensors,
+	useDroppable,
+	useDraggable,
 } from "@dnd-kit/core";
 
 interface User {
@@ -60,7 +60,7 @@ export default function HubPage() {
 	const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
 	const [searching, setSearching] = useState(false);
 	const [activeShipIndex, setActiveShipIndex] = useState<number | null>(null);
-	const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+	const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
 
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -143,18 +143,24 @@ export default function HubPage() {
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		setActiveShipIndex(null);
+		setDragOffset(null);
 
 		if (!over) return;
 
 		const shipIndex = parseInt(active.id.toString().replace("ship-", ""));
-		const [r, c] = over.id
-			.toString()
-			.replace("cell-", "")
-			.split("-")
-			.map(Number);
+		const [targetRow, targetCol] = over.id.toString().replace("cell-", "").split("-").map(Number);
 
 		const ship = fleet[shipIndex];
-		const updated = { ...ship, row: r, col: c };
+
+		// Apply drag offset (in grid units)
+		const offsetX = dragOffset ? dragOffset.x : 0;
+		const offsetY = dragOffset ? dragOffset.y : 0;
+
+		const updated = {
+			...ship,
+			row: targetRow - offsetY,
+			col: targetCol - offsetX,
+		};
 
 		if (!isPlacementValid(updated, shipIndex)) return;
 
@@ -166,7 +172,7 @@ export default function HubPage() {
 	const handleDoubleClick = (index: number) => {
 		const rotated: ShipPlacement = {
 			...fleet[index],
-			direction: fleet[index].direction === "horizontal" ? "vertical" : "horizontal",
+			direction: (fleet[index].direction === "horizontal" ? "vertical" : "horizontal") as "horizontal" | "vertical",
 		};
 		if (!isPlacementValid(rotated, index)) return;
 		const copy = [...fleet];
@@ -175,62 +181,10 @@ export default function HubPage() {
 	};
 
 	const sensors = useSensors(
-		useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+		useSensor(MouseSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
 		useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-		useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+		useSensor(PointerSensor)
 	);
-
-	const DraggableShip = ({
-		index,
-		ship,
-		onDoubleClick,
-	}: {
-		index: number;
-		ship: ShipPlacement;
-		r: number;
-		c: number;
-		onDoubleClick: (index: number) => void;
-	}) => {
-		const { attributes, listeners, setNodeRef, transform } = useDraggable({
-			id: `ship-${index}`,
-		});
-
-		const wrapperStyle: CSSProperties = {
-			position: "absolute",
-			top: 0,
-			left: 0,
-			width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
-			height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
-			boxShadow: "0 0 8px rgba(0,0,0,0.5)",
-			transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-			touchAction: "none",
-		};
-
-		return (
-			<div
-				ref={setNodeRef}
-				{...attributes}
-				{...listeners}
-				onDoubleClick={() => onDoubleClick(index)}
-				className="cursor-move hover:ring hover:ring-yellow-400"
-				style={wrapperStyle}
-				onMouseDown={() => setActiveShipIndex(index)}
-				onTouchStart={() => setActiveShipIndex(index)}
-			>
-				{Array.from({ length: ship.size }).map((_, i) => {
-					const cellStyle: CSSProperties = {
-						position: "absolute",
-						top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
-						left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
-						width: "2rem",
-						height: "2rem",
-						backgroundColor: "rgba(30, 64, 175, 0.8)",
-					};
-					return <div key={i} style={cellStyle} />;
-				})}
-			</div>
-		);
-	};
 
 	const GridCell = ({ r, c }: { r: number; c: number }) => {
 		const { setNodeRef, isOver } = useDroppable({
@@ -256,20 +210,67 @@ export default function HubPage() {
 				)}
 			>
 				{fleet.map((ship, index) => {
+					const {
+						attributes,
+						listeners,
+						setNodeRef: setDragRef,
+						transform,
+					} = useDraggable({
+						id: `ship-${index}`,
+					});
+
+					const wrapperStyle: CSSProperties = {
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
+						height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
+						boxShadow: "0 0 8px rgba(0,0,0,0.5)",
+						transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+						touchAction: "none",
+					};
+
+					const isShipStartHere = (sr: number, sc: number, j: number) => sr === r && sc === c && j === 0;
+
 					for (let j = 0; j < ship.size; j++) {
 						const sr = ship.row + (ship.direction === "vertical" ? j : 0);
 						const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
 
-						if (sr === r && sc === c && j === 0) {
+						if (isShipStartHere(sr, sc, j)) {
 							return (
-								<DraggableShip
+								<div
 									key={index}
-									index={index}
-									ship={ship}
-									r={r}
-									c={c}
-									onDoubleClick={handleDoubleClick}
-								/>
+									ref={setDragRef}
+									{...attributes}
+									{...listeners}
+									onDoubleClick={() => handleDoubleClick(index)}
+									className="cursor-move hover:ring hover:ring-yellow-400"
+									style={wrapperStyle}
+									onMouseDown={(e) => {
+										const cellSize = 32; // 2rem = 32px
+										const offsetX = ship.direction === "horizontal" ? Math.floor(e.nativeEvent.offsetX / cellSize) : 0;
+										const offsetY = ship.direction === "vertical" ? Math.floor(e.nativeEvent.offsetY / cellSize) : 0;
+										setActiveShipIndex(index);
+										setDragOffset({ x: offsetX, y: offsetY });
+									}}
+									onTouchStart={(e) => {
+										// For simplicity, just center offset on touch
+										setActiveShipIndex(index);
+										setDragOffset({ x: 0, y: 0 });
+									}}
+								>
+									{Array.from({ length: ship.size }).map((_, i) => {
+										const cellStyle: CSSProperties = {
+											position: "absolute",
+											top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
+											left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
+											width: "2rem",
+											height: "2rem",
+											backgroundColor: "rgba(30, 64, 175, 0.8)",
+										};
+										return <div key={i} style={cellStyle} />;
+									})}
+								</div>
 							);
 						}
 					}
@@ -312,7 +313,7 @@ export default function HubPage() {
 			<div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
 				<div className="space-y-6">
 					<h2 className="text-4xl font-semibold">Hello, {user.username}</h2>
-					<p className="text-gray-300">Hold the dark blue portion of a ship to drag ships directly from the board. Double-click a ship to rotate it.</p>
+					<p className="text-gray-300">Drag ships directly from the board. Double-click a ship to rotate it.</p>
 
 					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
 						<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -320,7 +321,7 @@ export default function HubPage() {
 								<thead>
 									<tr>
 										<th></th>
-										{Array.from({ length: 10 }).map((_, i) => (
+										{Array.from({ length: 10 }, (_, i) => (
 											<th key={i} className="px-2 text-sm text-gray-400">
 												{String.fromCharCode(65 + i)}
 											</th>
@@ -378,9 +379,7 @@ export default function HubPage() {
 										<td className="px-4 py-2">{entry.wins}</td>
 										<td className="px-4 py-2">{entry.losses}</td>
 										<td className="px-4 py-2">
-											{entry.losses === 0
-												? entry.wins.toFixed(2)
-												: (entry.wins / entry.losses).toFixed(2)}
+											{entry.losses === 0 ? entry.wins.toFixed(2) : (entry.wins / entry.losses).toFixed(2)}
 										</td>
 									</tr>
 								))}
