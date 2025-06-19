@@ -312,7 +312,7 @@ export default function HubPage() {
 			<div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
 				<div className="space-y-6">
 					<h2 className="text-4xl font-semibold">Hello, {user.username}</h2>
-					<p className="text-gray-300">Drag ships directly from the board. Double-click a ship to rotate it.</p>
+					<p className="text-gray-300">Hold the dark blue portion of a ship to drag ships directly from the board. Double-click a ship to rotate it.</p>
 
 					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
 						<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
