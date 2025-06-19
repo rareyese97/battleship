@@ -284,13 +284,11 @@ export default function GamePage() {
 				</div>
 			</div>
 
-			<div className="text-center mt-4">
+			<div className="text-center mt-4 pb-24">
 				<button onClick={handleExit} className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 cursor-pointer">
 					Exit Match
 				</button>
 			</div>
-			<br />
-			<br />
 
 			{user && <ChatBubble socket={socketRef.current} user={user} />}
 		</div>
