@@ -181,12 +181,14 @@ export default function HubPage() {
 									const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
 									if (sr === r && sc === c && j === 0) {
 										const style: CSSProperties = {
+											position: "absolute",
+											top: 0,
+											left: 0,
 											width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
 											height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
-											display: "flex",
-											flexDirection: ship.direction === "horizontal" ? "row" : "column",
 											boxShadow: "0 0 8px rgba(0,0,0,0.5)",
 										};
+
 										return (
 											<div
 												key={index}
