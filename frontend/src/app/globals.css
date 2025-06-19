@@ -87,11 +87,11 @@ body {
 @keyframes strong-pulse {
 	0%,
 	100% {
-		background-color: rgba(220, 38, 38, 0.8);
+		background-color: rgba(128, 175, 125, 0.8);
 		box-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 0 0 20px rgba(250, 204, 21, 0.8);
 	}
 	50% {
-		background-color: rgba(185, 28, 28, 0.5);
+		background-color: rgba(28, 185, 57, 0.5);
 		box-shadow: 0 0 20px rgba(250, 204, 21, 1), 0 0 30px rgba(250, 204, 21, 1);
 	}
 }
