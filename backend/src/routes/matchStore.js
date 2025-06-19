@@ -82,23 +82,12 @@ function removeBySocket(socket) {
 						// Remove match
 						delete matches[matchId];
 					}
-				}, 5000);
+				}, 5000); // 5 seconds grace period
 
 				return;
 			}
 		}
 	}
-
-	// Else, remove from queue
-	for (let [userId, { socket: s }] of queue.entries()) {
-		if (s.id === socket.id) {
-			queue.delete(userId);
-			console.log(`❌ Removed player ${userId} from queue due to disconnect`);
-			return;
-		}
-	}
-}
-
 
 	// Else, remove from queue
 	for (let [userId, { socket: s }] of queue.entries()) {
