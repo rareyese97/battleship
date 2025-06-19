@@ -353,15 +353,22 @@ function DraggableShip({ ship, index, onDoubleClick, setActiveShipIndex, setDrag
 			ref={setNodeRef}
 			{...attributes}
 			{...listeners}
-			onDoubleClick={() => onDoubleClick(index)}
 			className="cursor-move hover:ring hover:ring-yellow-400"
 			style={wrapperStyle}
-			onMouseDown={(e) => {
+			onPointerDown={(e) => {
 				const cellSize = 32;
+
+				if (e.detail === 2) {
+					// Double click
+					onDoubleClick(index);
+					return;
+				}
+
 				const shipPartIndex =
 					ship.direction === "horizontal"
 						? Math.floor(e.nativeEvent.offsetX / cellSize)
 						: Math.floor(e.nativeEvent.offsetY / cellSize);
+
 				setActiveShipIndex(index);
 				setDragOffset({
 					x: ship.direction === "horizontal" ? shipPartIndex : 0,
