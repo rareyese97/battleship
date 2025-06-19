@@ -60,7 +60,7 @@ export default function HubPage() {
 	const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
 	const [searching, setSearching] = useState(false);
 	const [activeShipIndex, setActiveShipIndex] = useState<number | null>(null);
-	const [grabbedOffset, setGrabbedOffset] = useState<number>(0); // NEW
+	const [grabbedOffset, setGrabbedOffset] = useState<number>(0);
 
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -151,14 +151,9 @@ export default function HubPage() {
 
 		const ship = fleet[shipIndex];
 
-		let newR = dropR;
-		let newC = dropC;
-
-		if (ship.direction === "vertical") {
-			newR = dropR - grabbedOffset;
-		} else {
-			newC = dropC - grabbedOffset;
-		}
+		// SNAP TO GRID — fix the offset issue!
+		let newR = ship.direction === "vertical" ? dropR - grabbedOffset : dropR;
+		let newC = ship.direction === "horizontal" ? dropC - grabbedOffset : dropC;
 
 		const updated = { ...ship, row: newR, col: newC };
 
@@ -180,56 +175,7 @@ export default function HubPage() {
 		setFleet(copy);
 	};
 
-	const sensors = useSensors(
-		useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-		useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-		useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
-	);
-
-	const GridCell = ({ r, c }: { r: number; c: number }) => {
-		const { setNodeRef, isOver } = useDroppable({
-			id: `cell-${r}-${c}`,
-		});
-
-		const isOccupied = fleet.some((ship) => {
-			for (let j = 0; j < ship.size; j++) {
-				const sr = ship.row + (ship.direction === "vertical" ? j : 0);
-				const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
-				if (sr === r && sc === c) return true;
-			}
-			return false;
-		});
-
-		return (
-			<td
-				ref={setNodeRef}
-				className={clsx(
-					"w-8 h-8 border border-white/30 relative overflow-hidden water-effect",
-					isOccupied ? "bg-blue-500" : "bg-transparent",
-					isOver ? "ring-2 ring-yellow-400" : ""
-				)}
-			>
-				{fleet.map((ship, index) => {
-					// Only render start of ship
-					const sr = ship.row;
-					const sc = ship.col;
-					if (sr === r && sc === c) {
-						return (
-							<DraggableShip
-								key={index}
-								index={index}
-								ship={ship}
-								setActiveShipIndex={setActiveShipIndex}
-								setGrabbedOffset={setGrabbedOffset}
-								handleDoubleClick={handleDoubleClick}
-							/>
-						);
-					}
-					return null;
-				})}
-			</td>
-		);
-	};
+	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(PointerSensor));
 	const DraggableShip = ({
 		index,
 		ship,
@@ -296,6 +242,55 @@ export default function HubPage() {
 					return <div key={i} style={cellStyle} />;
 				})}
 			</div>
+		);
+	};
+
+	const GridCell = ({ r, c }: { r: number; c: number }) => {
+		const { setNodeRef, isOver } = useDroppable({
+			id: `cell-${r}-${c}`,
+		});
+
+		const isOccupied = fleet.some((ship) => {
+			for (let j = 0; j < ship.size; j++) {
+				const sr = ship.row + (ship.direction === "vertical" ? j : 0);
+				const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
+				if (sr === r && sc === c) return true;
+			}
+			return false;
+		});
+
+		return (
+			<td
+				ref={setNodeRef}
+				className={clsx(
+					"w-8 h-8 border border-white/30 relative overflow-hidden water-effect",
+					isOccupied ? "bg-blue-500" : "bg-transparent",
+					isOver ? "ring-2 ring-yellow-400" : ""
+				)}
+			>
+				{fleet.map((ship, index) => {
+					const isShipStartHere = (sr: number, sc: number, j: number) => sr === r && sc === c && j === 0;
+
+					for (let j = 0; j < ship.size; j++) {
+						const sr = ship.row + (ship.direction === "vertical" ? j : 0);
+						const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
+
+						if (isShipStartHere(sr, sc, j)) {
+							return (
+								<DraggableShip
+									key={index}
+									index={index}
+									ship={ship}
+									setActiveShipIndex={setActiveShipIndex}
+									setGrabbedOffset={setGrabbedOffset}
+									handleDoubleClick={handleDoubleClick}
+								/>
+							);
+						}
+					}
+					return null;
+				})}
+			</td>
 		);
 	};
 
