@@ -152,7 +152,6 @@ export default function HubPage() {
 
 		const ship = fleet[shipIndex];
 
-		// Apply drag offset (in grid units)
 		const offsetX = dragOffset ? dragOffset.x : 0;
 		const offsetY = dragOffset ? dragOffset.y : 0;
 
@@ -200,81 +199,28 @@ export default function HubPage() {
 			return false;
 		});
 
+		const cellStyle = clsx(
+			"w-8 h-8 border border-white/30 relative overflow-hidden water-effect",
+			isOccupied ? "bg-blue-500" : "bg-transparent",
+			isOver ? "ring-2 ring-yellow-400" : ""
+		);
+
 		return (
-			<td
-				ref={setNodeRef}
-				className={clsx(
-					"w-8 h-8 border border-white/30 relative overflow-hidden water-effect",
-					isOccupied ? "bg-blue-500" : "bg-transparent",
-					isOver ? "ring-2 ring-yellow-400" : ""
-				)}
-			>
+			<td ref={setNodeRef} className={cellStyle}>
 				{fleet.map((ship, index) => {
-					const {
-						attributes,
-						listeners,
-						setNodeRef: setDragRef,
-						transform,
-					} = useDraggable({
-						id: `ship-${index}`,
-					});
+					const isShipStartHere = ship.row === r && ship.col === c;
+					if (!isShipStartHere) return null;
 
-					const wrapperStyle: CSSProperties = {
-						position: "absolute",
-						top: 0,
-						left: 0,
-						width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
-						height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
-						boxShadow: "0 0 8px rgba(0,0,0,0.5)",
-						transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-						touchAction: "none",
-					};
-
-					const isShipStartHere = (sr: number, sc: number, j: number) => sr === r && sc === c && j === 0;
-
-					for (let j = 0; j < ship.size; j++) {
-						const sr = ship.row + (ship.direction === "vertical" ? j : 0);
-						const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
-
-						if (isShipStartHere(sr, sc, j)) {
-							return (
-								<div
-									key={index}
-									ref={setDragRef}
-									{...attributes}
-									{...listeners}
-									onDoubleClick={() => handleDoubleClick(index)}
-									className="cursor-move hover:ring hover:ring-yellow-400"
-									style={wrapperStyle}
-									onMouseDown={(e) => {
-										const cellSize = 32; // 2rem = 32px
-										const offsetX = ship.direction === "horizontal" ? Math.floor(e.nativeEvent.offsetX / cellSize) : 0;
-										const offsetY = ship.direction === "vertical" ? Math.floor(e.nativeEvent.offsetY / cellSize) : 0;
-										setActiveShipIndex(index);
-										setDragOffset({ x: offsetX, y: offsetY });
-									}}
-									onTouchStart={(e) => {
-										// For simplicity, just center offset on touch
-										setActiveShipIndex(index);
-										setDragOffset({ x: 0, y: 0 });
-									}}
-								>
-									{Array.from({ length: ship.size }).map((_, i) => {
-										const cellStyle: CSSProperties = {
-											position: "absolute",
-											top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
-											left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
-											width: "2rem",
-											height: "2rem",
-											backgroundColor: "rgba(30, 64, 175, 0.8)",
-										};
-										return <div key={i} style={cellStyle} />;
-									})}
-								</div>
-							);
-						}
-					}
-					return null;
+					return (
+						<DraggableShip
+							key={index}
+							ship={ship}
+							index={index}
+							onDoubleClick={handleDoubleClick}
+							setActiveShipIndex={setActiveShipIndex}
+							setDragOffset={setDragOffset}
+						/>
+					);
 				})}
 			</td>
 		);
@@ -321,7 +267,7 @@ export default function HubPage() {
 								<thead>
 									<tr>
 										<th></th>
-										{Array.from({ length: 10 }, (_, i) => (
+										{Array.from({ length: 10 }).map((_, i) => (
 											<th key={i} className="px-2 text-sm text-gray-400">
 												{String.fromCharCode(65 + i)}
 											</th>
@@ -388,6 +334,70 @@ export default function HubPage() {
 					</div>
 				</div>
 			</div>
+		</div>
+	);
+}
+
+// Extracted DraggableShip component
+function DraggableShip({
+	ship,
+	index,
+	onDoubleClick,
+	setActiveShipIndex,
+	setDragOffset,
+}: {
+	ship: ShipPlacement;
+	index: number;
+	onDoubleClick: (index: number) => void;
+	setActiveShipIndex: (index: number | null) => void;
+	setDragOffset: (offset: { x: number; y: number }) => void;
+}) {
+	const { attributes, listeners, setNodeRef, transform } = useDraggable({
+		id: `ship-${index}`,
+	});
+
+	const wrapperStyle: CSSProperties = {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
+		height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
+		boxShadow: "0 0 8px rgba(0,0,0,0.5)",
+		transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+		touchAction: "none",
+	};
+
+	return (
+		<div
+			ref={setNodeRef}
+			{...attributes}
+			{...listeners}
+			onDoubleClick={() => onDoubleClick(index)}
+			className="cursor-move hover:ring hover:ring-yellow-400"
+			style={wrapperStyle}
+			onMouseDown={(e) => {
+				const cellSize = 32;
+				const offsetX = ship.direction === "horizontal" ? Math.floor(e.nativeEvent.offsetX / cellSize) : 0;
+				const offsetY = ship.direction === "vertical" ? Math.floor(e.nativeEvent.offsetY / cellSize) : 0;
+				setActiveShipIndex(index);
+				setDragOffset({ x: offsetX, y: offsetY });
+			}}
+			onTouchStart={() => {
+				setActiveShipIndex(index);
+				setDragOffset({ x: 0, y: 0 });
+			}}
+		>
+			{Array.from({ length: ship.size }).map((_, i) => {
+				const cellStyle: CSSProperties = {
+					position: "absolute",
+					top: ship.direction === "vertical" ? `calc(${i} * 2rem)` : "0",
+					left: ship.direction === "horizontal" ? `calc(${i} * 2rem)` : "0",
+					width: "2rem",
+					height: "2rem",
+					backgroundColor: "rgba(30, 64, 175, 0.8)",
+				};
+				return <div key={i} style={cellStyle} />;
+			})}
 		</div>
 	);
 }
