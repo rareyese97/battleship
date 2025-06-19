@@ -15,6 +15,7 @@ import {
 	useSensors,
 	useDroppable,
 	useDraggable,
+	PointerSensor
 } from "@dnd-kit/core";
 
 interface User {
@@ -177,10 +178,7 @@ export default function HubPage() {
 		setFleet(copy);
 	};
 
-	const sensors = useSensors(
-		useSensor(MouseSensor, { activationConstraint: { delay: 300, tolerance: 5 } }),
-		useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 5 } })
-	);
+	const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { delay: 300, tolerance: 5 } }));
 
 	const GridCell = ({ r, c }: { r: number; c: number }) => {
 		const { setNodeRef, isOver } = useDroppable({ id: `cell-${r}-${c}` });
@@ -374,10 +372,6 @@ function DraggableShip({ ship, index, onDoubleClick, setActiveShipIndex, setDrag
 					x: ship.direction === "horizontal" ? shipPartIndex : 0,
 					y: ship.direction === "vertical" ? shipPartIndex : 0,
 				});
-			}}
-			onTouchStart={() => {
-				setActiveShipIndex(index);
-				setDragOffset({ x: 0, y: 0 });
 			}}
 		>
 			{Array.from({ length: ship.size }).map((_, i) => {
