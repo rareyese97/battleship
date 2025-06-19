@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import "./water.css";
@@ -180,7 +180,7 @@ export default function HubPage() {
 									const sr = ship.row + (ship.direction === "vertical" ? j : 0);
 									const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
 									if (sr === r && sc === c && j === 0) {
-										const style = {
+										const style: CSSProperties = {
 											width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
 											height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
 											display: "flex",
@@ -250,7 +250,7 @@ export default function HubPage() {
 					</div>
 				</div>
 
-				<div className="space-y-4">
+				<div className="space-y-4 pb-24">
 					<h3 className="text-2xl font-semibold mb-2">Global Leaderboard</h3>
 
 					<div className="overflow-auto rounded-lg border border-white/10 max-h-96">
