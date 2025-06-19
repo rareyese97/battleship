@@ -181,10 +181,10 @@ export default function HubPage() {
 									const sc = ship.col + (ship.direction === "horizontal" ? j : 0);
 									if (sr === r && sc === c && j === 0) {
 										const style = {
-											width: ship.direction === "horizontal" ? `${ship.size * 32}px` : "32px",
-											height: ship.direction === "vertical" ? `${ship.size * 32}px` : "32px",
+											width: ship.direction === "horizontal" ? `calc(${ship.size} * 2rem)` : "2rem",
+											height: ship.direction === "vertical" ? `calc(${ship.size} * 2rem)` : "2rem",
 											display: "flex",
-											flexDirection: (ship.direction === "horizontal" ? "row" : "column") as "row" | "column",
+											flexDirection: ship.direction === "horizontal" ? "row" : "column",
 											boxShadow: "0 0 8px rgba(0,0,0,0.5)",
 										};
 										return (
