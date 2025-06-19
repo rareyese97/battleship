@@ -14,12 +14,12 @@ module.exports = {
 			keyframes: {
 				"strong-pulse": {
 					"0%, 100%": {
-						backgroundColor: "#dc2626",
-						boxShadow: "0 0 10px #facc15, 0 0 20px #facc15",
+						backgroundColor: "rgba(220, 38, 38, 0.6)", 
+						boxShadow: "0 0 8px rgba(250, 204, 21, 0.5), 0 0 16px rgba(250, 204, 21, 0.5)",
 					},
 					"50%": {
-						backgroundColor: "#b91c1c",
-						boxShadow: "0 0 20px #facc15, 0 0 30px #facc15",
+						backgroundColor: "rgba(185, 28, 28, 0.5)", 
+						boxShadow: "0 0 16px rgba(250, 204, 21, 0.5), 0 0 24px rgba(250, 204, 21, 0.5)",
 					},
 				},
 			},
