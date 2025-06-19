@@ -210,7 +210,7 @@ export default function GamePage() {
 						{row.map((cell, ci) => {
 							const isVisible = cell.revealed || cell.sunk || !clickable;
 							const cellClasses = cell.sunk
-								? "bg-red-600 animate-strong-pulse ring-4 ring-yellow-400 transition duration-150"
+								? "bg-red-600 animate-strong-pulse transition duration-150"
 								: cell.status === "hit"
 								? "bg-red-600"
 								: cell.status === "miss"

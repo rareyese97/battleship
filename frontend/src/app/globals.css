@@ -26,9 +26,8 @@ body {
 }
 
 .bg-grid {
-  background-color: #1b2027; /* Tailwind’s gray-900 */
+  background-color: #1b2027; 
 
-  /* heavier, grit-filled grid lines: 0.4 alpha */
   background-image:
     linear-gradient(
       to right,
