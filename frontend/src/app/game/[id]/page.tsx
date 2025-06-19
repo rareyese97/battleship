@@ -210,7 +210,7 @@ export default function GamePage() {
 						{row.map((cell, ci) => {
 							const isVisible = cell.revealed || cell.sunk || !clickable;
 							const cellClasses = cell.sunk
-								? "w-8 h-8 relative water-effect bg-red-600 animate-strong-pulse transition duration-150 cursor-default"
+								? "w-8 h-8 relative water-effect animate-strong-pulse transition duration-150 cursor-default"
 								: "w-8 h-8 border border-white/30 relative water-effect " +
 								  (cell.status === "hit"
 										? "bg-red-600"
