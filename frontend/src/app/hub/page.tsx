@@ -24,12 +24,14 @@ interface User {
 	id: number;
 	username: string;
 }
+
 interface LeaderboardEntry {
 	id: number;
 	username: string;
 	wins: number;
 	losses: number;
 }
+
 interface ShipPlacement {
 	row: number;
 	col: number;
@@ -61,7 +63,7 @@ export default function HubPage() {
 	const [previewPos, setPreviewPos] = useState<{ row: number; col: number } | null>(null);
 	const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL!;
 
-	// load session
+	// Load session
 	useEffect(() => {
 		fetch(`${BACKEND}/api/session`, { credentials: "include" })
 			.then((r) => r.json())
@@ -71,14 +73,14 @@ export default function HubPage() {
 			});
 	}, [BACKEND, router]);
 
-	// leaderboard
+	// Load leaderboard
 	useEffect(() => {
 		fetch(`${BACKEND}/api/leaderboard?type=global`)
 			.then((r) => r.json())
 			.then(setLeaders);
 	}, [BACKEND]);
 
-	// persist fleet
+	// Persist fleet
 	useEffect(() => {
 		localStorage.setItem("fleet", JSON.stringify(fleet));
 		fetch(`${BACKEND}/api/fleet`, {
@@ -87,9 +89,9 @@ export default function HubPage() {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ fleet }),
 		});
-	}, [fleet]);
+	}, [fleet, BACKEND]);
 
-	// matchmaking socket
+	// Matchmaking socket
 	useEffect(() => {
 		if (!user) return;
 		const sock = initSocket(user.id);
@@ -110,15 +112,14 @@ export default function HubPage() {
 			: sock.emit("find_match", { userId: user.id, username: user.username });
 	};
 
-	// validate
-	const isValid = (s: ShipPlacement, i: number) => {
-		for (let k = 0; k < s.size; k++) {
-			const r = s.row + (s.direction === "vertical" ? k : 0);
-			const c = s.col + (s.direction === "horizontal" ? k : 0);
+	const isValid = (ship: ShipPlacement, idx: number) => {
+		for (let k = 0; k < ship.size; k++) {
+			const r = ship.row + (ship.direction === "vertical" ? k : 0);
+			const c = ship.col + (ship.direction === "horizontal" ? k : 0);
 			if (r < 0 || r >= 10 || c < 0 || c >= 10) return false;
 			if (
 				fleet.some((f, j) => {
-					if (j === i) return false;
+					if (j === idx) return false;
 					for (let m = 0; m < f.size; m++) {
 						const rr = f.row + (f.direction === "vertical" ? m : 0);
 						const cc = f.col + (f.direction === "horizontal" ? m : 0);
@@ -132,18 +133,16 @@ export default function HubPage() {
 		return true;
 	};
 
-	// preview on dragOver
 	const handleDragOver = (e: DragOverEvent) => {
 		const over = e.over;
 		if (over && typeof over.id === "string" && over.id.startsWith("cell-")) {
 			const [r, c] = over.id.replace("cell-", "").split("-").map(Number);
-			setPreviewPos({ r, c });
+			setPreviewPos({ row: r, col: c });
 		} else {
 			setPreviewPos(null);
 		}
 	};
 
-	// drop
 	const handleDragEnd = (e: DragEndEvent) => {
 		const { active, over } = e;
 		if (!activeShip || !over) {
@@ -168,14 +167,16 @@ export default function HubPage() {
 		setPreviewPos(null);
 	};
 
-	// rotate
 	const rotateShip = (i: number) => {
 		const s = fleet[i];
-		const rot = { ...s, direction: s.direction === "horizontal" ? "vertical" : "horizontal" };
-		if (isValid(rot, i)) {
+		const rotated: ShipPlacement = {
+			...s,
+			direction: s.direction === "horizontal" ? "vertical" : "horizontal",
+		};
+		if (isValid(rotated, i)) {
 			setFleet((f) => {
 				const cp = [...f];
-				cp[i] = rot;
+				cp[i] = rotated;
 				return cp;
 			});
 		}
@@ -186,19 +187,18 @@ export default function HubPage() {
 		useSensor(TouchSensor)
 	);
 
-	// droppable cell
 	const GridCell = ({ r, c }: { r: number; c: number }) => {
 		const { setNodeRef, isOver } = useDroppable({ id: `cell-${r}-${c}` });
-		let hl = "";
+		let highlightClass = "";
 		if (previewPos && activeShip) {
 			const s = fleet[activeShip.index];
-			const baseR = s.direction === "vertical" ? previewPos.r - activeShip.grabbedCellIndex : previewPos.r;
-			const baseC = s.direction === "horizontal" ? previewPos.c - activeShip.grabbedCellIndex : previewPos.c;
+			const baseRow = s.direction === "vertical" ? previewPos.row - activeShip.grabbedCellIndex : previewPos.row;
+			const baseCol = s.direction === "horizontal" ? previewPos.col - activeShip.grabbedCellIndex : previewPos.col;
 			for (let k = 0; k < s.size; k++) {
-				const rr = baseR + (s.direction === "vertical" ? k : 0);
-				const cc = baseC + (s.direction === "horizontal" ? k : 0);
+				const rr = baseRow + (s.direction === "vertical" ? k : 0);
+				const cc = baseCol + (s.direction === "horizontal" ? k : 0);
 				if (rr === r && cc === c) {
-					hl = "bg-yellow-400/40";
+					highlightClass = "bg-yellow-400/40";
 					break;
 				}
 			}
@@ -206,13 +206,16 @@ export default function HubPage() {
 		return (
 			<td
 				ref={setNodeRef}
-				className={clsx("border border-white/30 water-effect p-0 m-0", isOver && "ring-2 ring-yellow-400", hl)}
+				className={clsx(
+					"border border-white/30 water-effect p-0 m-0",
+					isOver && "ring-2 ring-yellow-400",
+					highlightClass
+				)}
 				style={{ width: CELL, height: CELL }}
 			/>
 		);
 	};
 
-	// drag preview
 	const renderOverlay = () => {
 		if (!activeShip) return null;
 		const s = fleet[activeShip.index];
@@ -239,9 +242,7 @@ export default function HubPage() {
 					<h2 className="text-4xl font-semibold">Hello, {user.username}</h2>
 					<p className="text-gray-300">Drag ships directly from the board. Double-click to rotate.</p>
 
-					{/* outer full-width container */}
 					<div className="w-full rounded-lg bg-gray-800 overflow-auto border border-white/10">
-						{/* inner fixed-size relative wrapper */}
 						<div className="relative mx-auto" style={{ width: CELL * 11, height: CELL * 11 }}>
 							<DndContext
 								sensors={sensors}
@@ -249,7 +250,7 @@ export default function HubPage() {
 								onDragOver={handleDragOver}
 								onDragEnd={handleDragEnd}
 							>
-								<table className="table-fixed border-collapse m-0 p-0" style={{ width: CELL * 11, height: CELL * 11 }}>
+								<table className="table-fixed border-collapse m-0" style={{ width: CELL * 11, height: CELL * 11 }}>
 									<colgroup>
 										<col style={{ width: CELL }} />
 										{Array.from({ length: 10 }).map((_, i) => (
@@ -280,13 +281,13 @@ export default function HubPage() {
 									</tbody>
 								</table>
 
-								{/* ships */}
+								{/* Ships */}
 								{fleet.map((ship, i) => (
 									<DraggableShip
 										key={i}
 										ship={ship}
 										index={i}
-										setActiveShipIndex={(gci) => setActiveShip(gci)}
+										setActiveShipIndex={(info) => setActiveShip(info)}
 										handleDoubleClick={rotateShip}
 									/>
 								))}
@@ -321,9 +322,9 @@ export default function HubPage() {
 								</tr>
 							</thead>
 							<tbody>
-								{leaders.map((u, i) => (
+								{leaders.map((u, idx) => (
 									<tr key={u.id} className="hover:bg-gray-700">
-										<td className="px-4 py-2">{i + 1}</td>
+										<td className="px-4 py-2">{idx + 1}</td>
 										<td className="px-4 py-2">{u.username}</td>
 										<td className="px-4 py-2">{u.wins}</td>
 										<td className="px-4 py-2">{u.losses}</td>
