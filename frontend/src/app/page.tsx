@@ -256,10 +256,10 @@ export default function HomePage() {
 
 			<div className="min-h-screen flex items-center justify-center bg-gray-900  bg-grid p-8">
 				<div className="max-w-5xl w-full space-y-12">
-					<h1 className="text-6xl text-white">Sink That Ship - Battleship</h1>
+					<h1 className="text-6xl text-white">Sink That Ship</h1>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
 						<div className="space-y-6">
-							<h2 className="text-3xl text-white">Challenge & Conquer</h2>
+							<h2 className="text-3xl text-white">Challenge & Conquer in Battleship</h2>
 							<p className="text-lg text-gray-300">
 								Dive into intense naval combat where strategy meets skill. Engage with foes from around the world,
 								deploy your fleet, and outmaneuver opponents in real time.
@@ -572,7 +572,9 @@ export default function HomePage() {
 								{modal === "verify" && (
 									<>
 										<h3 className="text-xl mb-4">Verify Email</h3>
-										<p className="text-sm text-gray-700 mb-4">Check your email and spam for a verification link and code.</p>
+										<p className="text-sm text-gray-700 mb-4">
+											Check your email and spam for a verification link and code.
+										</p>
 										<div className="flex items-center border-b border-gray-300">
 											<Lock className="mr-2" />
 											<input
