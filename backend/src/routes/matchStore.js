@@ -60,7 +60,6 @@ function removeBySocket(socket) {
 			if (player.socket.id === socket.id) {
 				// Instead of immediately removing match → set a timeout
 
-				console.log(`⚠️ Player ${player.user.username} disconnected — waiting for reconnect...`);
 
 				player.disconnectedAt = Date.now();
 
@@ -71,7 +70,6 @@ function removeBySocket(socket) {
 
 					const stillPlayer = stillMatch.players[playerId];
 					if (stillPlayer.socket.id === socket.id && stillPlayer.disconnectedAt) {
-						console.log(`❌ Player ${player.user.username} did not reconnect — ending match ${matchId}`);
 
 						// Notify opponent
 						const opponent = Object.values(match.players).find((p) => p.user.id !== player.user.id);
@@ -93,7 +91,6 @@ function removeBySocket(socket) {
 	for (let [userId, { socket: s }] of queue.entries()) {
 		if (s.id === socket.id) {
 			queue.delete(userId);
-			console.log(`❌ Removed player ${userId} from queue due to disconnect`);
 			return;
 		}
 	}

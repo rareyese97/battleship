@@ -35,7 +35,6 @@ function initSocket(server) {
 	}
 
 	io.on("connection", (socket) => {
-		console.log("🔌 New client connected:", socket.id);
 
 		const userId = parseInt(socket.handshake.query.userId, 10);
 		if (!userId) {
@@ -192,7 +191,6 @@ function initSocket(server) {
 
 	});
 
-	console.log("✅ Socket.IO initialized");
 	return io;
 }
 

@@ -86,12 +86,10 @@ export default function GamePage() {
 		socketRef.current = socket;
 
 		socket.on("connect", () => {
-			console.log("🟢 Socket connected:", socket.id);
 			socket.emit("join_match", { matchId, userId: user.id, board: yourBoard });
 		});
 
 		socket.on("opponent_info", (o: any) => {
-			console.log("🟢 Opponent info received:", o);
 			setOpponent(o);
 		});
 
