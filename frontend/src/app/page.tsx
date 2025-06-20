@@ -261,7 +261,7 @@ export default function HomePage() {
 						<div className="space-y-6">
 							<h2 className="text-3xl text-white">Challenge & Conquer</h2>
 							<p className="text-lg text-gray-300">
-								Dive into intense naval combat where strategy meets skill. Engage friends or foes around the world,
+								Dive into intense naval combat where strategy meets skill. Engage with foes from around the world,
 								deploy your fleet, and outmaneuver opponents in real time.
 							</p>
 							<ul className="space-y-4">
@@ -572,7 +572,7 @@ export default function HomePage() {
 								{modal === "verify" && (
 									<>
 										<h3 className="text-xl mb-4">Verify Email</h3>
-										<p className="text-sm text-gray-700 mb-4">Check your email for a verification link and code.</p>
+										<p className="text-sm text-gray-700 mb-4">Check your email and spam for a verification link and code.</p>
 										<div className="flex items-center border-b border-gray-300">
 											<Lock className="mr-2" />
 											<input

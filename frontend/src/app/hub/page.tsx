@@ -240,7 +240,7 @@ export default function HubPage() {
 				{/* Board & Controls */}
 				<div className="space-y-6">
 					<h2 className="text-4xl font-semibold">Hello, {user.username}</h2>
-					<p className="text-gray-300">Drag ships directly from the board. Double-click to rotate.</p>
+					<p className="text-gray-300">Drag ships directly from the board. Double-click to rotate. Click Find Opponent when you are ready to play.</p>
 
 					<div className="w-full rounded-lg bg-gray-800 overflow-auto border border-white/10">
 						<div className="relative mx-auto" style={{ width: CELL * 11, height: CELL * 11 }}>
