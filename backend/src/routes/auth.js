@@ -8,7 +8,12 @@ const nodemailer = require("nodemailer");
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Configure SendGrid mail transporter
+// FRONTEND_URL=https://sinkthatship.com
+// BACKEND_URL=https://api.sinkthatship.com
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+// Configure SendGrid (or other) mail transporter
 const transporter = nodemailer.createTransport({
 	host: "smtp.sendgrid.net",
 	port: 587,
@@ -38,14 +43,13 @@ router.post("/register", async (req, res) => {
 		const verifyToken = crypto.randomBytes(32).toString("hex");
 		const verifySentAt = new Date();
 
-		// 4) Create user (emailVerified defaults to false)
+		// 4) Create user
 		await prisma.user.create({
 			data: { email, username, password: hashed, verifyToken, verifySentAt },
 		});
 
-		// 5) Build one-click verification URL (pointing at this same server)
-		const verifyUrl =
-			`http://localhost:4000/api/auth/verify-email` + `?email=${encodeURIComponent(email)}` + `&token=${verifyToken}`;
+		// 5) Build one-click verification URL
+		const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${verifyToken}`;
 
 		// 6) Send the email
 		await transporter.sendMail({
@@ -63,7 +67,7 @@ router.post("/register", async (req, res) => {
 
 		return res.status(201).json({ message: "Registered! Check your email to verify." });
 	} catch (err) {
-		console.error(err);
+		console.error("Registration error:", err);
 		return res.status(500).json({ error: "Internal server error." });
 	}
 });
@@ -71,7 +75,6 @@ router.post("/register", async (req, res) => {
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
 	const { email, password } = req.body;
-
 	try {
 		const user = await prisma.user.findUnique({ where: { email } });
 		if (!user) return res.status(400).json({ error: "Invalid credentials." });
@@ -81,7 +84,7 @@ router.post("/login", async (req, res) => {
 
 		if (!user.emailVerified) return res.status(400).json({ error: "unverified" });
 
-		// Store user data in the session
+		// Store user in session
 		req.session.user = {
 			id: user.id,
 			username: user.username,
@@ -90,28 +93,24 @@ router.post("/login", async (req, res) => {
 
 		return res.json({ message: "Login successful." });
 	} catch (err) {
-		console.error(err);
+		console.error("Login error:", err);
 		return res.status(500).json({ error: "Internal server error." });
 	}
 });
 
+// POST /api/auth/logout
 router.post("/logout", (req, res) => {
-	try {
-		req.session.destroy((err) => {
-			if (err) {
-				console.error("Logout error:", err);
-				return res.status(500).json({ error: "Logout failed" });
-			}
-			res.clearCookie("connect.sid"); // optional but good practice
-			return res.status(200).json({ message: "Logged out successfully" });
-		});
-	} catch (err) {
-		console.error("Logout server error:", err);
-		res.status(500).json({ error: "Server error" });
-	}
+	req.session.destroy((err) => {
+		if (err) {
+			console.error("Logout error:", err);
+			return res.status(500).json({ error: "Logout failed" });
+		}
+		res.clearCookie("connect.sid");
+		return res.json({ message: "Logged out successfully" });
+	});
 });
 
-// POST /api/auth/verify (fallback for manual code entry)
+// POST /api/auth/verify (manual code)
 router.post("/verify", async (req, res) => {
 	const { email, code } = req.body;
 	try {
@@ -120,7 +119,7 @@ router.post("/verify", async (req, res) => {
 			return res.status(400).json({ error: "Invalid verification code." });
 		}
 
-		// Check 24-hour expiry
+		// Enforce 24-hour expiry
 		const ageMs = Date.now() - new Date(user.verifySentAt).getTime();
 		if (ageMs > 1000 * 60 * 60 * 24) {
 			return res.status(400).json({ error: "Verification code expired." });
@@ -133,7 +132,7 @@ router.post("/verify", async (req, res) => {
 
 		return res.json({ message: "Email verified." });
 	} catch (err) {
-		console.error(err);
+		console.error("Manual verify error:", err);
 		return res.status(500).json({ error: "Internal server error." });
 	}
 });
@@ -165,7 +164,7 @@ router.post("/resend", async (req, res) => {
 
 		return res.json({ message: "Verification email resent." });
 	} catch (err) {
-		console.error(err);
+		console.error("Resend verify error:", err);
 		return res.status(500).json({ error: "Internal server error." });
 	}
 });
@@ -191,20 +190,16 @@ router.get("/verify-email", async (req, res) => {
 			return res.status(400).send("Verification link has expired");
 		}
 
-		// Mark as verified
+		// Mark verified
 		await prisma.user.update({
 			where: { email: String(email) },
-			data: {
-				emailVerified: true,
-				verifyToken: null,
-				verifySentAt: null,
-			},
+			data: { emailVerified: true, verifyToken: null, verifySentAt: null },
 		});
 
-		// Redirect back to local front-end
-		return res.redirect(`http://localhost:3000/?verified=true&email=${encodeURIComponent(email)}`);
+		// Redirect back to your front-end
+		return res.redirect(`${FRONTEND_URL}/?verified=true&email=${encodeURIComponent(String(email))}`);
 	} catch (err) {
-		console.error(err);
+		console.error("One-click verify error:", err);
 		return res.status(500).send("Server error");
 	}
 });
@@ -224,20 +219,16 @@ router.post("/forgot-password", async (req, res) => {
 			data: { resetToken, resetSentAt },
 		});
 
-		// send reset link or code
 		await transporter.sendMail({
 			from: process.env.SMTP_FROM,
 			to: email,
 			subject: "Password reset request",
-			html: `
-        <p>Your reset code is:</p>
-        <p><strong>${resetToken}</strong></p>
-      `,
+			html: `<p>Your reset code is:</p><p><strong>${resetToken}</strong></p>`,
 		});
 
 		res.json({ message: "Password reset email sent." });
 	} catch (err) {
-		console.error(err);
+		console.error("Forgot password error:", err);
 		res.status(500).json({ error: "Internal server error." });
 	}
 });
@@ -250,14 +241,13 @@ router.post("/verify-reset-code", async (req, res) => {
 		if (!user || user.resetToken !== code) {
 			return res.status(400).json({ error: "Invalid reset code." });
 		}
-		// optional: expire after 1h
 		const age = Date.now() - new Date(user.resetSentAt).getTime();
 		if (age > 1000 * 60 * 60) {
 			return res.status(400).json({ error: "Reset code expired." });
 		}
 		res.json({ message: "Reset code valid." });
 	} catch (err) {
-		console.error(err);
+		console.error("Verify reset code error:", err);
 		res.status(500).json({ error: "Internal server error." });
 	}
 });
@@ -270,22 +260,17 @@ router.post("/reset-password", async (req, res) => {
 		if (!user || user.resetToken !== code) {
 			return res.status(400).json({ error: "Invalid reset code." });
 		}
-		// (re-use expiry check if you like)
 		if (await bcrypt.compare(newPassword, user.password)) {
 			return res.status(400).json({ error: "New password must be different from the old password." });
 		}
 		const hashed = await bcrypt.hash(newPassword, 10);
 		await prisma.user.update({
 			where: { email },
-			data: {
-				password: hashed,
-				resetToken: null,
-				resetSentAt: null,
-			},
+			data: { password: hashed, resetToken: null, resetSentAt: null },
 		});
 		res.json({ message: "Password has been reset." });
 	} catch (err) {
-		console.error(err);
+		console.error("Reset password error:", err);
 		res.status(500).json({ error: "Internal server error." });
 	}
 });
