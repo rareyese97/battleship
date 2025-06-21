@@ -36,7 +36,7 @@ router.delete("/delete-account", async (req, res) => {
 		if (!user) return res.status(404).json({ error: "User not found." });
 
 		// Verify password
-		const valid = await bcrypt.compare(password, user.passwordHash);
+		const valid = await bcrypt.compare(password, user.password);
 		if (!valid) return res.status(401).json({ error: "Incorrect password." });
 
 		// Delete user record
@@ -123,9 +123,8 @@ router.post("/login", async (req, res) => {
 			return res.status(400).json({ error: "Email not verified." });
 		}
 
-		// 4) Persist user ID in session for protected routes
+		// 4) Persist user ID (and optional payload) in session for protected routes
 		req.session.userId = user.id;
-		// Keep full user info handy
 		req.session.user = {
 			id: user.id,
 			username: user.username,
