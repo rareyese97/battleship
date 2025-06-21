@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, FormEvent } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Menu as MenuIcon, X as XIcon, LogOut, Lock, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -36,7 +36,7 @@ export default function Navbar() {
 		setDeleteModalOpen(false);
 	};
 
-	const handleDeleteAccount = async (e) => {
+	const handleDeleteAccount = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setDeleteError("");
 		try {
