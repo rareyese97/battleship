@@ -24,6 +24,36 @@ const transporter = nodemailer.createTransport({
 	},
 });
 
+// DELETE /api/auth/delete-account
+router.delete("/delete-account", async (req, res) => {
+	try {
+		const { password } = req.body;
+		const userId = req.session.userId;
+		if (!userId) return res.status(401).json({ error: "Not authenticated." });
+
+		// Fetch user
+		const user = await prisma.user.findUnique({ where: { id: userId } });
+		if (!user) return res.status(404).json({ error: "User not found." });
+
+		// Verify password
+		const valid = await bcrypt.compare(password, user.passwordHash);
+		if (!valid) return res.status(401).json({ error: "Incorrect password." });
+
+		// Delete user record
+		await prisma.user.delete({ where: { id: userId } });
+
+		// Destroy session & clear cookie
+		req.session.destroy((err) => {
+			if (err) console.error("Session destroy error:", err);
+			res.clearCookie(process.env.SESSION_COOKIE_NAME || "connect.sid");
+			return res.status(200).json({ message: "Account deleted." });
+		});
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ error: "Server error." });
+	}
+});
+
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
 	const { email, username, password } = req.body;
