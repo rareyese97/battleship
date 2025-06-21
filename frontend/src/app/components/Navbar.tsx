@@ -10,6 +10,7 @@ export default function Navbar() {
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [deletePassword, setDeletePassword] = useState("");
 	const [deleteError, setDeleteError] = useState("");
+	const [deleteSuccess, setDeleteSuccess] = useState("");
 	const router = useRouter();
 	const pathname = usePathname();
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -28,6 +29,7 @@ export default function Navbar() {
 	const openDeleteModal = () => {
 		setDeleteError("");
 		setDeletePassword("");
+		setDeleteSuccess("");
 		setDeleteModalOpen(true);
 		setOpen(false);
 	};
@@ -51,7 +53,12 @@ export default function Navbar() {
 				setDeleteError(data.error || "Incorrect password.");
 				return;
 			}
-			router.push("/");
+			// Show success message, then close modal and redirect
+			setDeleteSuccess("Account has been deleted.");
+			setTimeout(() => {
+				closeDeleteModal();
+				router.push("/");
+			}, 3000);
 		} catch {
 			setDeleteError("Network error. Please try again.");
 		}
@@ -134,30 +141,34 @@ export default function Navbar() {
 					<div className="bg-white rounded-2xl shadow-xl w-72 p-6 relative text-black">
 						<button
 							onClick={closeDeleteModal}
-							className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors duration-200"
+							className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors duration-200 cursor-pointer"
 						>
 							<XIcon size={20} />
 						</button>
-						<h3 className="text-xl mb-4">Delete Account</h3>
-						<form onSubmit={handleDeleteAccount}>
-							<div className="flex items-center border-b border-gray-300">
-								<Lock className="mr-2" />
-								<input
-									type="password"
-									placeholder="Password"
-									className="w-full py-2 focus:outline-none"
-									value={deletePassword}
-									onChange={(e) => setDeletePassword(e.target.value)}
-								/>
-							</div>
-							{deleteError && <p className="text-red-500 text-sm mt-2">{deleteError}</p>}
-							<button
-								type="submit"
-								className="w-full mt-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
-							>
-								Delete Account
-							</button>
-						</form>
+						<h3 className="text-xl mb-4 text-red-500">Delete Account</h3>
+						{deleteSuccess ? (
+							<p className="text-center text-green-600">{deleteSuccess}</p>
+						) : (
+							<form onSubmit={handleDeleteAccount}>
+								<div className="flex items-center border-b border-gray-300">
+									<Lock className="mr-2" />
+									<input
+										type="password"
+										placeholder="Password"
+										className="w-full py-2 focus:outline-none"
+										value={deletePassword}
+										onChange={(e) => setDeletePassword(e.target.value)}
+									/>
+								</div>
+								{deleteError && <p className="text-red-500 text-sm mt-2">{deleteError}</p>}
+								<button
+									type="submit"
+									className="w-full mt-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition cursor-pointer"
+								>
+									Delete Account
+								</button>
+							</form>
+						)}
 					</div>
 				</div>
 			)}
