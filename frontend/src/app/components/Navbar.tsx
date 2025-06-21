@@ -132,7 +132,10 @@ export default function Navbar() {
 			{deleteModalOpen && (
 				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
 					<div className="bg-white rounded-2xl shadow-xl w-72 p-6 relative text-black">
-						<button onClick={closeDeleteModal} className="absolute top-3 right-3 p-2">
+						<button
+							onClick={closeDeleteModal}
+							className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors duration-200"
+						>
 							<XIcon size={20} />
 						</button>
 						<h3 className="text-xl mb-4">Delete Account</h3>

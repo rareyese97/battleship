@@ -106,21 +106,38 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
 	const { email, password } = req.body;
 	try {
+		// 1) Find the user by email
 		const user = await prisma.user.findUnique({ where: { email } });
-		if (!user) return res.status(400).json({ error: "Invalid credentials." });
+		if (!user) {
+			return res.status(400).json({ error: "Invalid credentials." });
+		}
 
+		// 2) Compare submitted password against stored hash
 		const match = await bcrypt.compare(password, user.password);
-		if (!match) return res.status(400).json({ error: "Invalid credentials." });
+		if (!match) {
+			return res.status(400).json({ error: "Invalid credentials." });
+		}
 
-		if (!user.emailVerified) return res.status(400).json({ error: "unverified" });
+		// 3) Ensure email is verified
+		if (!user.emailVerified) {
+			return res.status(400).json({ error: "Email not verified." });
+		}
 
-		// Store user in session
+		// 4) Persist user ID in session for protected routes
+		req.session.userId = user.id;
+		// Keep full user info handy
 		req.session.user = {
 			id: user.id,
 			username: user.username,
 			email: user.email,
 		};
 
+		// 5) Save session before sending response
+		await new Promise((resolve, reject) => {
+			req.session.save((err) => (err ? reject(err) : resolve(null)));
+		});
+
+		// 6) Respond
 		return res.json({ message: "Login successful." });
 	} catch (err) {
 		console.error("Login error:", err);
