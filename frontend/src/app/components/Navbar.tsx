@@ -53,7 +53,6 @@ export default function Navbar() {
 				setDeleteError(data.error || "Incorrect password.");
 				return;
 			}
-			// Show success message, then close modal and redirect
 			setDeleteSuccess("Account has been deleted.");
 			setTimeout(() => {
 				closeDeleteModal();
@@ -107,11 +106,12 @@ export default function Navbar() {
 										<LogOut size={20} />
 										Sign Out
 									</button>
+									{/* Red Delete Account */}
 									<button
 										onClick={openDeleteModal}
-										className="flex items-center gap-2 hover:text-gray-600 cursor-pointer"
+										className="flex items-center gap-2 text-red-600 hover:text-red-700 cursor-pointer"
 									>
-										<Trash2 size={20} />
+										<Trash2 size={20} className="text-red-600" />
 										Delete Account
 									</button>
 								</motion.nav>
@@ -135,43 +135,57 @@ export default function Navbar() {
 				</motion.div>
 			</div>
 
-			{/* Delete Account Modal */}
-			{deleteModalOpen && (
-				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-					<div className="bg-white rounded-2xl shadow-xl w-72 p-6 relative text-black">
-						<button
-							onClick={closeDeleteModal}
-							className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors duration-200 cursor-pointer"
+			{/* Delete Account Modal with animations */}
+			<AnimatePresence>
+				{deleteModalOpen && (
+					<motion.div
+						className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.2 }}
+					>
+						<motion.div
+							className="bg-white rounded-2xl shadow-xl w-72 p-6 relative text-black"
+							initial={{ scale: 0.8, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.8, opacity: 0 }}
+							transition={{ type: "spring", stiffness: 300, damping: 25 }}
 						>
-							<XIcon size={20} />
-						</button>
-						<h3 className="text-xl mb-4 text-red-500">Delete Account</h3>
-						{deleteSuccess ? (
-							<p className="text-center text-green-600">{deleteSuccess}</p>
-						) : (
-							<form onSubmit={handleDeleteAccount}>
-								<div className="flex items-center border-b border-gray-300">
-									<Lock className="mr-2" />
-									<input
-										type="password"
-										placeholder="Password"
-										className="w-full py-2 focus:outline-none"
-										value={deletePassword}
-										onChange={(e) => setDeletePassword(e.target.value)}
-									/>
-								</div>
-								{deleteError && <p className="text-red-500 text-sm mt-2">{deleteError}</p>}
-								<button
-									type="submit"
-									className="w-full mt-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition cursor-pointer"
-								>
-									Delete Account
-								</button>
-							</form>
-						)}
-					</div>
-				</div>
-			)}
+							<button
+								onClick={closeDeleteModal}
+								className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors duration-200 cursor-pointer"
+							>
+								<XIcon size={20} />
+							</button>
+							<h3 className="text-xl mb-4 text-red-500">Delete Account</h3>
+							{deleteSuccess ? (
+								<p className="text-center text-green-600">{deleteSuccess}</p>
+							) : (
+								<form onSubmit={handleDeleteAccount}>
+									<div className="flex items-center border-b border-gray-300">
+										<Lock className="mr-2" />
+										<input
+											type="password"
+											placeholder="Password"
+											className="w-full py-2 focus:outline-none"
+											value={deletePassword}
+											onChange={(e) => setDeletePassword(e.target.value)}
+										/>
+									</div>
+									{deleteError && <p className="text-red-500 text-sm mt-2">{deleteError}</p>}
+									<button
+										type="submit"
+										className="w-full mt-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition cursor-pointer"
+									>
+										Delete Account
+									</button>
+								</form>
+							)}
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</>
 	);
 }
