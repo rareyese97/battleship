@@ -289,13 +289,13 @@ export default function HomePage() {
 							<div className="mt-6 flex space-x-4">
 								<button
 									onClick={openLogin}
-									className="px-6 py-3 border border-white text-white rounded-full hover:bg-white hover:text-gray-900 transition"
+									className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full hover:text-gray-900 transition"
 								>
 									Login
 								</button>
 								<button
 									onClick={openSignup}
-									className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+									className="px-6 py-3  text-white rounded-full  transition bg-green-600 hover:bg-green-700"
 								>
 									Sign Up
 								</button>
