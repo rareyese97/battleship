@@ -43,6 +43,7 @@ export default function HomePage() {
 	const [code, setCode] = useState("");
 	const [error, setError] = useState("");
 	const [info, setInfo] = useState("");
+	const [loading, setLoading] = useState(false);
 
 	const emailRegex = /^\S+@\S+\.\S+$/;
 	const passwordRegex = /^(?=.*\d).{8,}$/;
@@ -127,6 +128,8 @@ export default function HomePage() {
 			setError("Passwords do not match.");
 			return;
 		}
+		setLoading(true);
+
 		try {
 			const res = await fetch(`${backendUrl}/api/auth/register`, {
 				method: "POST",
@@ -140,6 +143,8 @@ export default function HomePage() {
 			}
 			openVerify(email);
 		} catch {
+			setLoading(false);
+
 			setError("Network error. Please try again.");
 		}
 	};
@@ -147,6 +152,8 @@ export default function HomePage() {
 	// Login
 	const handleLogin = async () => {
 		setError("");
+		setLoading(true);
+
 		const res = await fetch(`${backendUrl}/api/auth/login`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -154,6 +161,8 @@ export default function HomePage() {
 			credentials: "include",
 		});
 		const data = await res.json();
+		setLoading(false);
+
 		if (!res.ok) {
 			if (data.error === "unverified") {
 				openVerify(email);
@@ -346,10 +355,12 @@ export default function HomePage() {
 										</div>
 										<button
 											onClick={handleLogin}
-											className="w-full mt-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition cursor-pointer"
+											disabled={loading}
+											className="w-full py-2 rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
 										>
-											Login
+											{loading ? "Loading..." : "Login"}
 										</button>
+
 										<div className="text-sm text-center mt-2">
 											<button onClick={openForgot} className="underline cursor-pointer">
 												Forgot your password?
@@ -433,9 +444,10 @@ export default function HomePage() {
 										</div>
 										<button
 											onClick={handleSignup}
-											className="w-full mt-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition cursor-pointer"
+											disabled={loading}
+											className="w-full py-2 mt-4 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 transition"
 										>
-											Sign Up
+											{loading ? "Creating account..." : "Sign Up"}
 										</button>
 										{error && (
 											<motion.p
