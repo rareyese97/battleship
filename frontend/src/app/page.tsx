@@ -356,7 +356,7 @@ export default function HomePage() {
 										<button
 											onClick={handleLogin}
 											disabled={loading}
-											className="w-full py-2 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white"
+											className="w-full py-2 mt-4 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white"
 										>
 											{loading ? "Loading..." : "Login"}
 										</button>
