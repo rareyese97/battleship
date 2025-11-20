@@ -1,11 +1,11 @@
 // backend/src/index.js
-import "dotenv/config";
-import express from "express";
-import http from "http";
-import cors from "cors";
-import session from "express-session";
-import { PrismaClient } from "@prisma/client";
-import authRouter from "./routes/auth.js";
+require("dotenv").config();
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const session = require("express-session");
+const { PrismaClient } = require("@prisma/client");
+const authRouter = require("./routes/auth");
 
 const app = express();
 app.set("trust proxy", 1); // Trust Heroku/Render/Vercel proxy
@@ -124,4 +124,3 @@ const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
 	console.log(`Server running on http://localhost:${PORT}`);
 });
-
