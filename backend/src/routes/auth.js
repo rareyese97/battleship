@@ -1,9 +1,10 @@
 // backend/src/routes/auth.js
-const express = require("express");
-const { PrismaClient } = require("@prisma/client");
-const crypto = require("crypto");
-const bcrypt = require("bcrypt");
-import { sendEmail } from "../utils/email.js";
+import express from "express";
+import { PrismaClient } from "@prisma/client";
+import crypto from "crypto";
+import bcrypt from "bcrypt";
+import nodemailer from "nodemailer";
+
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -264,8 +265,7 @@ router.post("/forgot-password", async (req, res) => {
 			data: { resetToken, resetSentAt },
 		});
 
-		await sendEmail
-			({
+		await sendEmail({
 			from: process.env.SMTP_FROM,
 			to: email,
 			subject: "Password reset request",
@@ -321,4 +321,4 @@ router.post("/reset-password", async (req, res) => {
 	}
 });
 
-module.exports = router;
+export default router;
