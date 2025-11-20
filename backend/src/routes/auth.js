@@ -3,8 +3,7 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
-
+import { sendEmail } from "../utils/email.js";
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -82,7 +81,7 @@ router.post("/register", async (req, res) => {
 		const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${verifyToken}`;
 
 		// 6) Send the email
-		await transporter.sendMail({
+		await sendEmail({
 			from: process.env.SMTP_FROM,
 			to: email,
 			subject: "Verify your Battleship Online account",
@@ -198,7 +197,7 @@ router.post("/resend", async (req, res) => {
 			data: { verifyToken, verifySentAt },
 		});
 
-		await transporter.sendMail({
+		await sendEmail({
 			from: process.env.SMTP_FROM,
 			to: email,
 			subject: "Battleship Online: Verify Your Email Again",
@@ -265,7 +264,7 @@ router.post("/forgot-password", async (req, res) => {
 			data: { resetToken, resetSentAt },
 		});
 
-		await transporter.sendMail({
+		await sendEmail({
 			from: process.env.SMTP_FROM,
 			to: email,
 			subject: "Password reset request",
