@@ -3,7 +3,7 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
-import { sendEmail } from "../utils/email.js";
+const { sendEmail } = require("../utils/email"); 
 const router = express.Router();
 const prisma = new PrismaClient();
 
