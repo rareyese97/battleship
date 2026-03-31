@@ -12,22 +12,6 @@ const prisma = new PrismaClient();
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
-async function sendVerificationEmail({ email, username, verifyToken }) {
-	const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${verifyToken}`;
-
-	await sendEmail({
-		from: process.env.SMTP_FROM,
-		to: email,
-		subject: "Verify your Battleship Online account",
-		html: `
-      <p>Hey ${username},</p>
-      <p>Click below to verify your email:</p>
-      <p><a href="${verifyUrl}">Verify my email</a></p>
-      <p>If that link doesn’t work, copy this code into the app:</p>
-      <p><strong>${verifyToken}</strong></p>
-    `,
-	});
-}
 
 // DELETE /api/auth/delete-account
 router.delete("/delete-account", async (req, res) => {
