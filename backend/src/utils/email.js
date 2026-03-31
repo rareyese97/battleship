@@ -1,12 +1,31 @@
-import sgMail from "@sendgrid/mail";
+const sgMail = require("@sendgrid/mail");
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+let isConfigured = false;
 
-export async function sendEmail({ to, subject, html }) {
+function configureSendGrid() {
+  if (isConfigured) return;
+
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) {
+    throw new Error("SENDGRID_API_KEY is not set.");
+  }
+
+  sgMail.setApiKey(apiKey);
+  isConfigured = true;
+}
+
+async function sendEmail({ to, subject, html, from }) {
+  configureSendGrid();
+
+  const sender = from || process.env.SMTP_FROM;
+  if (!sender) {
+    throw new Error("SMTP_FROM is not set.");
+  }
+
   try {
     await sgMail.send({
       to,
-      from: process.env.SMTP_FROM, 
+      from: sender,
       subject,
       html,
     });
@@ -16,3 +35,5 @@ export async function sendEmail({ to, subject, html }) {
     throw err;
   }
 }
+
+module.exports = { sendEmail };
