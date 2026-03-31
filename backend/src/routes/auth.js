@@ -12,17 +12,6 @@ const prisma = new PrismaClient();
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
-// Configure SendGrid (or other) mail transporter
-const transporter = nodemailer.createTransport({
-	host: "smtp.sendgrid.net",
-	port: 587,
-	secure: false,
-	auth: {
-		user: "apikey",
-		pass: process.env.SENDGRID_API_KEY,
-	},
-});
-
 // DELETE /api/auth/delete-account
 router.delete("/delete-account", async (req, res) => {
 	try {
