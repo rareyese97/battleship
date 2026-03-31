@@ -12,16 +12,22 @@ const prisma = new PrismaClient();
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
-// Configure SendGrid (or other) mail transporter
-const transporter = nodemailer.createTransport({
-	host: "smtp.sendgrid.net",
-	port: 587,
-	secure: false,
-	auth: {
-		user: "apikey",
-		pass: process.env.SENDGRID_API_KEY,
-	},
-});
+async function sendVerificationEmail({ email, username, verifyToken }) {
+	const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${verifyToken}`;
+
+	await sendEmail({
+		from: process.env.SMTP_FROM,
+		to: email,
+		subject: "Verify your Battleship Online account",
+		html: `
+      <p>Hey ${username},</p>
+      <p>Click below to verify your email:</p>
+      <p><a href="${verifyUrl}">Verify my email</a></p>
+      <p>If that link doesn’t work, copy this code into the app:</p>
+      <p><strong>${verifyToken}</strong></p>
+    `,
+	});
+}
 
 // DELETE /api/auth/delete-account
 router.delete("/delete-account", async (req, res) => {
@@ -77,22 +83,8 @@ router.post("/register", async (req, res) => {
 			data: { email, username, password: hashed, verifyToken, verifySentAt },
 		});
 
-		// 5) Build one-click verification URL
-		const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${verifyToken}`;
-
-		// 6) Send the email
-		await sendEmail({
-			from: process.env.SMTP_FROM,
-			to: email,
-			subject: "Verify your Battleship Online account",
-			html: `
-        <p>Hey ${username},</p>
-        <p>Click below to verify your email:</p>
-        <p><a href="${verifyUrl}">Verify my email</a></p>
-        <p>If that link doesn’t work, copy this code into the app:</p>
-        <p><strong>${verifyToken}</strong></p>
-      `,
-		});
+		// 5) Send verification email
+		await sendVerificationEmail({ email, username, verifyToken });
 
 		return res.status(201).json({ message: "Registered! Check your email to verify." });
 	} catch (err) {
@@ -119,7 +111,30 @@ router.post("/login", async (req, res) => {
 
 		// 3) Ensure email is verified
 		if (!user.emailVerified) {
-			return res.status(400).json({ error: "Email not verified." });
+			const verifyToken = crypto.randomBytes(32).toString("hex");
+			const verifySentAt = new Date();
+
+			await prisma.user.update({
+				where: { email },
+				data: { verifyToken, verifySentAt },
+			});
+
+			try {
+				await sendVerificationEmail({
+					email: user.email,
+					username: user.username,
+					verifyToken,
+				});
+			} catch (emailErr) {
+				console.error("Login verification email send error:", emailErr);
+				return res.status(400).json({
+					error: "Email not verified. We refreshed your verification code, but could not send email right now. Please try again shortly.",
+				});
+			}
+
+			return res.status(400).json({
+				error: "Email not verified. We sent you a fresh verification email.",
+			});
 		}
 
 		// 4) Persist user ID (and optional payload) in session for protected routes
