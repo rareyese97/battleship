@@ -20,7 +20,12 @@ async function sendEmail({ to, subject, html, text, from }) {
   try {
     await sgMail.send({ to, from: sender, subject, ...(html ? { html } : {}), ...(text ? { text } : {}) });
   } catch (err) {
-    console.error("SendGrid delivery failed:", { statusCode: err?.code, message: err?.message });
+    // Log SendGrid's structured API errors without exposing authorization headers or API keys.
+    console.error("SendGrid delivery failed:", JSON.stringify({
+      statusCode: err?.code,
+      message: err?.message,
+      errors: err?.response?.body?.errors ?? err?.response?.body ?? null,
+    }, null, 2));
     throw err;
   }
 }
