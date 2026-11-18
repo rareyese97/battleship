@@ -14,6 +14,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const isValidPassword = (value) => typeof value === "string" && value.length >= 8 && value.length <= 72 && /\d/.test(value);
 const isFreshResetToken = (sentAt) => sentAt instanceof Date && Date.now() - sentAt.getTime() >= 0 && Date.now() - sentAt.getTime() <= RESET_TOKEN_TTL_MS;
+const isFreshVerificationToken = (sentAt) => sentAt instanceof Date && Date.now() - sentAt.getTime() >= 0 && Date.now() - sentAt.getTime() <= 24 * 60 * 60 * 1000;
 
 async function sendVerificationEmail({ email, username, verifyToken }) {
 	const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${verifyToken}`;
@@ -184,8 +185,7 @@ router.post("/verify", async (req, res) => {
 		}
 
 		// Enforce 24-hour expiry
-		const ageMs = Date.now() - new Date(user.verifySentAt).getTime();
-		if (ageMs > 1000 * 60 * 60 * 24) {
+		if (!isFreshVerificationToken(user.verifySentAt)) {
 			return res.status(400).json({ error: "Verification code expired." });
 		}
 
