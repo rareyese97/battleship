@@ -49,19 +49,46 @@ body {
 	animation: pulse-slow 2s ease-in-out infinite;
 }
 
-@keyframes sunk-float {
+@keyframes sunk-label-pop {
 	0% {
 		opacity: 0;
-		transform: translateY(10px) scale(0.95);
+		transform: translate(-50%, -50%) translateY(12px) scale(0.82);
+	}
+	18% {
+		opacity: 1;
+		transform: translate(-50%, -50%) translateY(0) scale(1.04);
 	}
 	30% {
+		transform: translate(-50%, -50%) translateY(0) scale(1);
+	}
+	82% {
 		opacity: 1;
-		transform: translateY(0px) scale(1);
+		transform: translate(-50%, -50%) translateY(-4px) scale(1);
 	}
 	100% {
 		opacity: 0;
-		transform: translateY(-20px) scale(1.05);
+		transform: translate(-50%, -50%) translateY(-14px) scale(0.98);
 	}
+}
+
+@keyframes sunk-cell-reveal {
+	0% {
+		background-color: rgba(127, 29, 29, 0.55);
+		box-shadow: inset 0 0 0 rgba(250, 204, 21, 0);
+	}
+	45% {
+		background-color: rgba(220, 38, 38, 0.95);
+		box-shadow: inset 0 0 12px rgba(250, 204, 21, 0.55), 0 0 8px rgba(250, 204, 21, 0.3);
+	}
+	100% {
+		background-color: rgba(185, 28, 28, 0.9);
+		box-shadow: inset 0 0 5px rgba(250, 204, 21, 0.2);
+	}
+}
+
+.sunk-cell {
+	background-color: rgba(185, 28, 28, 0.9);
+	animation: sunk-cell-reveal 650ms ease-out both;
 }
 
 .sunk-label {
@@ -76,26 +103,10 @@ body {
 	padding: 2px 6px;
 	border-radius: 4px;
 	pointer-events: none;
-	animation: sunk-float 1.5s ease-in-out forwards;
+	animation: sunk-label-pop 1.9s cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
 	z-index: 10;
 	width: max-content;
 	white-space: nowrap;
 	line-height: 1;
 	text-align: center;
-}
-
-@keyframes strong-pulse {
-	0%,
-	100% {
-		background-color: rgba(220, 38, 38, 0.85); /* red */
-		box-shadow: 0 0 6px rgba(250, 204, 21, 0.6), 0 0 12px rgba(250, 204, 21, 0.5); /* yellow glow */
-	}
-	50% {
-		background-color: rgba(185, 28, 28, 0.6); /* darker red */
-		box-shadow: 0 0 10px rgba(250, 204, 21, 0.7), 0 0 16px rgba(250, 204, 21, 0.6);
-	}
-}
-
-.animate-strong-pulse {
-	animation: strong-pulse 1.5s ease-in-out infinite;
 }
