@@ -94,7 +94,7 @@ export default function HubPage() {
 	// Matchmaking socket
 	useEffect(() => {
 		if (!user) return;
-		const sock = initSocket(user.id);
+		const sock = initSocket();
 		sock.on("match_found", ({ matchId }: { matchId: string }) => {
 			router.push(`/game/${matchId}`);
 		});
@@ -108,8 +108,8 @@ export default function HubPage() {
 		if (!user) return;
 		const sock = getSocket();
 		searching
-			? sock.emit("cancel_match", { userId: user.id })
-			: sock.emit("find_match", { userId: user.id, username: user.username });
+			? sock.emit("cancel_match")
+			: sock.emit("find_match");
 	};
 
 	const isValid = (ship: ShipPlacement, idx: number) => {
