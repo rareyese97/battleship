@@ -134,8 +134,9 @@ export default function GamePage() {
 							newCell = {
 								...newCell,
 								sunk: true,
-								status: "hit", // ensure sunk cells stay red
+								status: "hit",
 								revealed: true,
+								shipId: shipId !== undefined ? shipId : newCell.shipId,
 							};
 						}
 
@@ -189,7 +190,20 @@ export default function GamePage() {
 		setTimeout(() => setToastMsg(null), 3000);
 	};
 
-	const renderBoard = (board: BoardState, clickable: boolean) => (
+	const renderBoard = (board: BoardState, clickable: boolean) => {
+		// Show one floating SUNK label per ship, positioned on its first cell.
+		const sunkLabelCells = new Set<string>();
+		const labeledShips = new Set<number>();
+		board.forEach((row, ri) =>
+			row.forEach((cell, ci) => {
+				if (cell.sunk && cell.shipId !== undefined && !labeledShips.has(cell.shipId)) {
+					labeledShips.add(cell.shipId);
+					sunkLabelCells.add(`${ri}-${ci}`);
+				}
+			})
+		);
+
+		return (
 		<table className="border-collapse mx-auto">
 			<thead>
 				<tr>
@@ -208,7 +222,7 @@ export default function GamePage() {
 						{row.map((cell, ci) => {
 							const isVisible = cell.revealed || cell.sunk || !clickable;
 							const cellClasses = cell.sunk
-								? "w-8 h-8 relative animate-strong-pulse transition duration-150 cursor-default"
+								? "w-8 h-8 relative sunk-cell cursor-default"
 								: "w-8 h-8 border border-white/30 relative water-effect " +
 								  (cell.status === "hit"
 										? "bg-red-600"
@@ -221,7 +235,7 @@ export default function GamePage() {
 
 							return (
 								<td key={ci} className={cellClasses} onClick={() => clickable && clickEnemyCell(ri, ci)}>
-									{cell.sunk && <div className="sunk-label">SUNK!</div>}
+									{cell.sunk && sunkLabelCells.has(`${ri}-${ci}`) && <div className="sunk-label">SHIP SUNK</div>}
 								</td>
 							);
 						})}
@@ -229,7 +243,8 @@ export default function GamePage() {
 				))}
 			</tbody>
 		</table>
-	);
+		);
+	};
 
 	if (!user) return null;
 
