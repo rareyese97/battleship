@@ -80,13 +80,12 @@ export default function GamePage() {
 		const socket = io("https://api.sinkthatship.com", {
 			withCredentials: true,
 			transports: ["websocket"],
-			query: { userId: user.id },
 		});
 
 		socketRef.current = socket;
 
 		socket.on("connect", () => {
-			socket.emit("join_match", { matchId, userId: user.id, board: yourBoard });
+			socket.emit("join_match", { matchId, board: yourBoard });
 		});
 
 		socket.on("opponent_info", (o: any) => {
@@ -163,11 +162,11 @@ export default function GamePage() {
 		});
 
 		// Place ships right after join
-		socket.emit("place_ships", { matchId, userId: user.id, board: yourBoard });
+		socket.emit("place_ships", { matchId, board: yourBoard });
 
 		return () => {
 			if (socketRef.current) {
-				socketRef.current.emit("leave_match", { matchId, userId: user.id });
+				socketRef.current.emit("leave_match", { matchId });
 				socketRef.current.disconnect();
 			}
 		};
@@ -180,7 +179,7 @@ export default function GamePage() {
 	};
 
 	const handleExit = () => {
-		socketRef.current?.emit("leave_match", { matchId, userId: user.id });
+		socketRef.current?.emit("leave_match", { matchId });
 		router.push("/hub");
 	};
 
