@@ -8,7 +8,8 @@ const { PrismaClient } = require("@prisma/client");
 const authRouter = require("./routes/auth");
 
 const app = express();
-app.set("trust proxy", 1); // Trust Heroku/Render/Vercel proxy
+app.set("trust proxy", 1); // Trust the single reverse proxy used by the host
+if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) throw new Error("SESSION_SECRET must be configured in production.");
 
 const server = http.createServer(app);
 const prisma = new PrismaClient();
@@ -29,7 +30,7 @@ app.use(
 			if (!origin) return callback(null, true);
 
 			// Allow localhost, prod, and Vercel previews
-			if (allowedOrigins.includes(origin) || /https:\/\/battleship-2646.*\.vercel\.app/.test(origin)) {
+			if (allowedOrigins.includes(origin) || /^https:\/\/battleship-2646-[a-z0-9-]+\.vercel\.app$/.test(origin)) {
 				return callback(null, true);
 			} else {
 				return callback(new Error("Not allowed by CORS"));
@@ -39,11 +40,10 @@ app.use(
 	})
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "20kb" }));
 
 // Session Middleware
-app.use(
-	session({
+const sessionMiddleware = session({
 		secret: process.env.SESSION_SECRET || "keyboard cat",
 		resave: false,
 		saveUninitialized: false,
@@ -58,8 +58,8 @@ app.use(
 			// domain: process.env.NODE_ENV === "production" ? "sinkthatship.com" : undefined,
 			maxAge: 1000 * 60 * 60 * 24,
 		},
-	})
-);
+	});
+app.use(sessionMiddleware);
 
 // Auth Routes
 app.use("/api/auth", authRouter);
@@ -117,8 +117,9 @@ app.get("/", (req, res) => {
 	res.send("Backend is running!");
 });
 
-// Start Socket server
-initSocket(server);
+// Share the authenticated Express session with Socket.IO.
+const io = initSocket(server);
+io.engine.use(sessionMiddleware);
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
