@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
-const isValidPassword = (value) => typeof value === "string" && value.length >= 8 && value.length <= 72 && /\\d/.test(value);
+const isValidPassword = (value) => typeof value === "string" && value.length >= 8 && value.length <= 72 && /\d/.test(value);
 const isFreshResetToken = (sentAt) => sentAt instanceof Date && Date.now() - sentAt.getTime() >= 0 && Date.now() - sentAt.getTime() <= RESET_TOKEN_TTL_MS;
 
 async function sendVerificationEmail({ email, username, verifyToken }) {
@@ -22,7 +22,7 @@ async function sendVerificationEmail({ email, username, verifyToken }) {
 		to: email,
 		subject: "Battleship Online: Verify your email",
 		html: `
-      <p>Hi ${username},</p>
+      <p>Hi ${String(username).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]))},</p>
       <p>Thanks for registering! Please verify your email using one of the options below:</p>
       <p><a href="${verifyUrl}">Verify my email</a></p>
       <p>Or enter this code manually:</p>
@@ -67,7 +67,7 @@ router.post("/register", async (req, res) => {
 	const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
 	const username = typeof req.body.username === "string" ? req.body.username.trim() : "";
 	const { password } = req.body;
-	if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254 || username.length < 3 || username.length > 24 || !/^[a-zA-Z0-9_-]+$/.test(username) || !isValidPassword(password)) return res.status(400).json({ error: "Enter a valid email, a 3–24 character username, and a password of at least 8 characters containing a number." });
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || username.length < 3 || username.length > 24 || !/^[a-zA-Z0-9_-]+$/.test(username) || !isValidPassword(password)) return res.status(400).json({ error: "Enter a valid email, a 3–24 character username, and a password of at least 8 characters containing a number." });
 	try {
 		// 1) Check duplicates
 		const exists = await prisma.user.findFirst({
@@ -267,7 +267,7 @@ router.get("/verify-email", async (req, res) => {
 // POST /api/auth/forgot-password
 router.post("/forgot-password", async (req, res) => {
 	const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
-	if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.status(400).json({ error: "If an account exists for that address, a reset email will be sent." });
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "If an account exists for that address, a reset email will be sent." });
 	try {
 		const user = await prisma.user.findUnique({ where: { email } });
 		if (!user) return res.json({ message: "If an account exists for that address, a reset email will be sent." });
@@ -281,7 +281,6 @@ router.post("/forgot-password", async (req, res) => {
 		});
 
 		await sendEmail({
-			from: process.env.SMTP_FROM,
 			to: email,
 			subject: "Password reset request",
 			html: `<p>Your reset code is:</p><p><strong>${resetToken}</strong></p>`,
