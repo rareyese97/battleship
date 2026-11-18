@@ -39,3 +39,5 @@ jobs:
         run: |
           (cd frontend && npm audit --audit-level=high)
           (cd backend && npm audit --audit-level=high)
+
+# Keep this workflow on the maintenance branch to refresh and audit both lockfiles.
