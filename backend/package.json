@@ -15,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^6.9.0",
+    "@prisma/client": "^7.10.1",
     "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "connect-pg-simple": "^10.0.0",
