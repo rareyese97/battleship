@@ -49,10 +49,11 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
 		<div className="fixed bottom-6 left-4 sm:left-[calc(50%+112px)] z-50">
 			<motion.div
 				className="relative overflow-hidden bg-white shadow-xl"
+				style={{ maxWidth: "85vw", maxHeight: "35vh" }}
 				initial={false}
 				animate={{
-					width: open ? "min(85vw, 360px)" : 48,
-					height: open ? "min(35vh, 320px)" : 48,
+					width: open ? 360 : 48,
+					height: open ? 320 : 48,
 					borderRadius: open ? 18 : 999,
 				}}
 				transition={{ type: "spring", stiffness: 240, damping: 30, mass: 0.85 }}
@@ -91,9 +92,9 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
 							</div>
 
 							<motion.div
-								className="mt-3 flex shrink-0 items-center"
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0, transition: { delay: 0.18, duration: 0.2 } }}
+								className="mt-3 flex shrink-0 origin-bottom items-center"
+								initial={{ opacity: 0, y: 12, scale: 0.96 }}
+								animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.2, duration: 0.28, ease: [0.22, 1, 0.36, 1] } }}
 							>
 								<input
 									type="text"
