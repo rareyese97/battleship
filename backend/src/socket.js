@@ -187,12 +187,18 @@ function initSocket(server) {
 			}
 		});
 
-		socket.on("chat_message", (msg) => {
-			if (typeof msg !== "string" || msg.length > 550 || !socket.data.username) return;
-			const separator = msg.indexOf(": ");
-			const message = (separator >= 0 ? msg.slice(separator + 2) : msg).trim();
-			if (!message || message.length > 500) return;
-			io.emit("chat_message", `${socket.data.username}: ${message}`);
+		socket.on("chat_message", ({ matchId, message }) => {
+			if (typeof matchId !== "string" || typeof message !== "string" || !socket.data.username) return;
+			const cleanMessage = message.trim();
+			if (!cleanMessage || cleanMessage.length > 500) return;
+
+			const match = matchStore.getMatch(matchId);
+			if (!match || !match.players[userId]) return;
+
+			const formattedMessage = `${socket.data.username}: ${cleanMessage}`;
+			for (const player of Object.values(match.players)) {
+				player.socket?.emit("chat_message", formattedMessage);
+			}
 		});
 
 	});
