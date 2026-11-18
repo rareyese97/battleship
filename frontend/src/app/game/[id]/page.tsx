@@ -40,6 +40,7 @@ export default function GamePage() {
 	const router = useRouter();
 	const socketRef = useRef<Socket | null>(null);
 	const [user, setUser] = useState<any>(null);
+	const [gameSocket, setGameSocket] = useState<Socket | null>(null);
 	const [opponent, setOpponent] = useState<any>(null);
 	const [yourBoard, setYourBoard] = useState<BoardState>(createEmptyBoard());
 	const [enemyBoard, setEnemyBoard] = useState<BoardState>(createEmptyBoard());
@@ -83,6 +84,7 @@ export default function GamePage() {
 		});
 
 		socketRef.current = socket;
+		setGameSocket(socket);
 
 		socket.on("connect", () => {
 			socket.emit("join_match", { matchId, board: yourBoard });
@@ -165,7 +167,9 @@ export default function GamePage() {
 			if (socketRef.current) {
 				socketRef.current.emit("leave_match", { matchId });
 				socketRef.current.disconnect();
+				socketRef.current = null;
 			}
+			setGameSocket(null);
 		};
 	}, [user, matchId]);
 
@@ -284,7 +288,7 @@ export default function GamePage() {
 				</button>
 			</div>
 
-			{user && <ChatBubble socket={socketRef.current} user={user} matchId={String(matchId)} />}
+			{user && <ChatBubble socket={gameSocket} user={user} matchId={String(matchId)} />}
 		</div>
 	);
 }
