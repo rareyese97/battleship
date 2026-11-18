@@ -248,8 +248,7 @@ router.get("/verify-email", async (req, res) => {
 		}
 
 		// Enforce 24-hour expiry
-		const ageMs = Date.now() - new Date(user.verifySentAt).getTime();
-		if (ageMs > 1000 * 60 * 60 * 24) {
+		if (!isFreshVerificationToken(user.verifySentAt)) {
 			return res.status(400).send("Verification link has expired");
 		}
 
