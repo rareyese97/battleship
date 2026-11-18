@@ -16,6 +16,7 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
 	const [messages, setMessages] = useState<string[]>([]);
 	const [newMessage, setNewMessage] = useState("");
 	const [hasUnread, setHasUnread] = useState(false);
+	const [isConnected, setIsConnected] = useState(socket?.connected ?? false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	function sendMessage() {
@@ -25,6 +26,22 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
 		setNewMessage("");
 		setHasUnread(false);
 	}
+
+	useEffect(() => {
+		if (!socket) {
+			setIsConnected(false);
+			return;
+		}
+		const handleConnect = () => setIsConnected(true);
+		const handleDisconnect = () => setIsConnected(false);
+		setIsConnected(socket.connected);
+		socket.on("connect", handleConnect);
+		socket.on("disconnect", handleDisconnect);
+		return () => {
+			socket.off("connect", handleConnect);
+			socket.off("disconnect", handleDisconnect);
+		};
+	}, [socket]);
 
 	useEffect(() => {
 		if (!socket) return;
@@ -107,7 +124,7 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
 								/>
 								<button
 									onClick={sendMessage}
-									disabled={!socket.connected || !newMessage.trim()}
+									disabled={!isConnected || !newMessage.trim()}
 									aria-label="Send message"
 									className="flex h-[38px] items-center justify-center rounded-r-md bg-gray-800 px-3 text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
 								>
