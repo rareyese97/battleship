@@ -24,6 +24,8 @@ const server = http.createServer(app);
 const prisma = new PrismaClient();
 const sessionPool = new Pool({
 	connectionString: process.env.DATABASE_URL,
+	// Render's PostgreSQL instance requires TLS. Keep certificate validation enabled.
+	ssl: isProduction ? {} : undefined,
 	max: 10,
 	idleTimeoutMillis: 30_000,
 	connectionTimeoutMillis: 10_000,
