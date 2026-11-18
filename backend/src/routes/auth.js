@@ -138,7 +138,10 @@ router.post("/login", async (req, res) => {
 			});
 		}
 
-		// 4) Persist user ID (and optional payload) in session for protected routes
+		// Rotate the session ID after authentication to prevent session fixation.
+		await new Promise((resolve, reject) => {
+			req.session.regenerate((err) => (err ? reject(err) : resolve(null)));
+		});
 		req.session.userId = user.id;
 		req.session.user = {
 			id: user.id,
@@ -146,7 +149,6 @@ router.post("/login", async (req, res) => {
 			email: user.email,
 		};
 
-		// 5) Save session before sending response
 		await new Promise((resolve, reject) => {
 			req.session.save((err) => (err ? reject(err) : resolve(null)));
 		});
@@ -173,7 +175,8 @@ router.post("/logout", (req, res) => {
 
 // POST /api/auth/verify (manual code)
 router.post("/verify", async (req, res) => {
-	const { email, code } = req.body;
+	const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+	const { code } = req.body;
 	try {
 		const user = await prisma.user.findUnique({ where: { email } });
 		if (!user || user.verifyToken !== code) {
@@ -313,7 +316,8 @@ router.post("/verify-reset-code", async (req, res) => {
 
 // POST /api/auth/reset-password
 router.post("/reset-password", async (req, res) => {
-	const { email, code, newPassword } = req.body;
+	const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+	const { code, newPassword } = req.body;
 	try {
 		const user = await prisma.user.findUnique({ where: { email } });
 		if (!user || user.resetToken !== code || !isFreshResetToken(user.resetSentAt)) {
