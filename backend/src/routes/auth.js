@@ -11,6 +11,9 @@ const prisma = new PrismaClient();
 // BACKEND_URL=https://api.sinkthatship.com
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+const isValidPassword = (value) => typeof value === "string" && value.length >= 8 && value.length <= 72 && /\\d/.test(value);
+const isFreshResetToken = (sentAt) => sentAt instanceof Date && Date.now() - sentAt.getTime() >= 0 && Date.now() - sentAt.getTime() <= RESET_TOKEN_TTL_MS;
 
 async function sendVerificationEmail({ email, username, verifyToken }) {
 	const verifyUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${verifyToken}`;
@@ -61,7 +64,10 @@ router.delete("/delete-account", async (req, res) => {
 
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
-	const { email, username, password } = req.body;
+	const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+	const username = typeof req.body.username === "string" ? req.body.username.trim() : "";
+	const { password } = req.body;
+	if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254 || username.length < 3 || username.length > 24 || !/^[a-zA-Z0-9_-]+$/.test(username) || !isValidPassword(password)) return res.status(400).json({ error: "Enter a valid email, a 3–24 character username, and a password of at least 8 characters containing a number." });
 	try {
 		// 1) Check duplicates
 		const exists = await prisma.user.findFirst({
@@ -95,7 +101,9 @@ router.post("/register", async (req, res) => {
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
-	const { email, password } = req.body;
+	const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+	const { password } = req.body;
+	if (!email || typeof password !== "string" || password.length > 72) return res.status(400).json({ error: "Invalid credentials." });
 	try {
 		// 1) Find the user by email
 		const user = await prisma.user.findUnique({ where: { email } });
@@ -206,7 +214,6 @@ router.post("/resend", async (req, res) => {
 		});
 
 		await sendEmail({
-			from: process.env.SMTP_FROM,
 			to: email,
 			subject: "Battleship Online: Verify Your Email Again",
 			html: `
@@ -259,10 +266,11 @@ router.get("/verify-email", async (req, res) => {
 
 // POST /api/auth/forgot-password
 router.post("/forgot-password", async (req, res) => {
-	const { email } = req.body;
+	const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+	if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.status(400).json({ error: "If an account exists for that address, a reset email will be sent." });
 	try {
 		const user = await prisma.user.findUnique({ where: { email } });
-		if (!user) return res.status(404).json({ error: "Please enter a valid email address." });
+		if (!user) return res.json({ message: "If an account exists for that address, a reset email will be sent." });
 
 		const resetToken = crypto.randomBytes(32).toString("hex");
 		const resetSentAt = new Date();
@@ -294,8 +302,7 @@ router.post("/verify-reset-code", async (req, res) => {
 		if (!user || user.resetToken !== code) {
 			return res.status(400).json({ error: "Invalid reset code." });
 		}
-		const age = Date.now() - new Date(user.resetSentAt).getTime();
-		if (age > 1000 * 60 * 60) {
+		if (!isFreshResetToken(user.resetSentAt)) {
 			return res.status(400).json({ error: "Reset code expired." });
 		}
 		res.json({ message: "Reset code valid." });
@@ -310,9 +317,10 @@ router.post("/reset-password", async (req, res) => {
 	const { email, code, newPassword } = req.body;
 	try {
 		const user = await prisma.user.findUnique({ where: { email } });
-		if (!user || user.resetToken !== code) {
-			return res.status(400).json({ error: "Invalid reset code." });
+		if (!user || user.resetToken !== code || !isFreshResetToken(user.resetSentAt)) {
+			return res.status(400).json({ error: "Invalid or expired reset code." });
 		}
+		if (!isValidPassword(newPassword)) return res.status(400).json({ error: "Password must be at least 8 characters, include a number, and be no longer than 72 characters." });
 		if (await bcrypt.compare(newPassword, user.password)) {
 			return res.status(400).json({ error: "New password must be different from the old password." });
 		}
