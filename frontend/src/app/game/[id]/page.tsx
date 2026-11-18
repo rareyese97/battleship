@@ -161,9 +161,6 @@ export default function GamePage() {
 			}
 		});
 
-		// Place ships right after join
-		socket.emit("place_ships", { matchId, board: yourBoard });
-
 		return () => {
 			if (socketRef.current) {
 				socketRef.current.emit("leave_match", { matchId });
@@ -287,7 +284,7 @@ export default function GamePage() {
 				</button>
 			</div>
 
-			{user && <ChatBubble socket={socketRef.current} user={user} />}
+			{user && <ChatBubble socket={socketRef.current} user={user} matchId={String(matchId)} />}
 		</div>
 	);
 }
