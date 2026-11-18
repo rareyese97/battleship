@@ -40,6 +40,7 @@ export default function GamePage() {
 	const router = useRouter();
 	const socketRef = useRef<Socket | null>(null);
 	const [user, setUser] = useState<any>(null);
+	const [gameSocket, setGameSocket] = useState<Socket | null>(null);
 	const [opponent, setOpponent] = useState<any>(null);
 	const [yourBoard, setYourBoard] = useState<BoardState>(createEmptyBoard());
 	const [enemyBoard, setEnemyBoard] = useState<BoardState>(createEmptyBoard());
@@ -80,13 +81,13 @@ export default function GamePage() {
 		const socket = io("https://api.sinkthatship.com", {
 			withCredentials: true,
 			transports: ["websocket"],
-			query: { userId: user.id },
 		});
 
 		socketRef.current = socket;
+		setGameSocket(socket);
 
 		socket.on("connect", () => {
-			socket.emit("join_match", { matchId, userId: user.id, board: yourBoard });
+			socket.emit("join_match", { matchId, board: yourBoard });
 		});
 
 		socket.on("opponent_info", (o: any) => {
@@ -162,14 +163,13 @@ export default function GamePage() {
 			}
 		});
 
-		// Place ships right after join
-		socket.emit("place_ships", { matchId, userId: user.id, board: yourBoard });
-
 		return () => {
 			if (socketRef.current) {
-				socketRef.current.emit("leave_match", { matchId, userId: user.id });
+				socketRef.current.emit("leave_match", { matchId });
 				socketRef.current.disconnect();
+				socketRef.current = null;
 			}
+			setGameSocket(null);
 		};
 	}, [user, matchId]);
 
@@ -180,7 +180,7 @@ export default function GamePage() {
 	};
 
 	const handleExit = () => {
-		socketRef.current?.emit("leave_match", { matchId, userId: user.id });
+		socketRef.current?.emit("leave_match", { matchId });
 		router.push("/hub");
 	};
 
@@ -288,7 +288,7 @@ export default function GamePage() {
 				</button>
 			</div>
 
-			{user && <ChatBubble socket={socketRef.current} user={user} />}
+			{user && <ChatBubble socket={gameSocket} user={user} matchId={String(matchId)} />}
 		</div>
 	);
 }

@@ -8,9 +8,10 @@ import { Socket } from "socket.io-client";
 interface ChatBubbleProps {
 	socket: Socket | null;
 	user: { id: number; username: string };
+	matchId: string;
 }
 
-export default function ChatBubble({ socket, user }: ChatBubbleProps) {
+export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
 	const [open, setOpen] = useState(false);
 	const [messages, setMessages] = useState<string[]>([]);
 	const [newMessage, setNewMessage] = useState("");
@@ -19,8 +20,7 @@ export default function ChatBubble({ socket, user }: ChatBubbleProps) {
 
 	function sendMessage() {
 		if (newMessage.trim() === "") return;
-		const msg = `${user.username}: ${newMessage}`;
-		socket?.emit("chat_message", msg);
+		socket?.emit("chat_message", { matchId, message: newMessage });
 		setNewMessage("");
 		setHasUnread(false);
 	}
