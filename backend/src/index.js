@@ -4,15 +4,35 @@ const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const session = require("express-session");
+const connectPgSimple = require("connect-pg-simple");
+const { Pool } = require("pg");
 const { PrismaClient } = require("@prisma/client");
 const authRouter = require("./routes/auth");
 
 const app = express();
-app.set("trust proxy", 1); // Trust the single reverse proxy used by the host
-if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) throw new Error("SESSION_SECRET must be configured in production.");
+const isProduction = process.env.NODE_ENV === "production";
+app.set("trust proxy", 1); // Trust the single reverse proxy used by the host.
+
+if (isProduction && !process.env.SESSION_SECRET) {
+	throw new Error("SESSION_SECRET must be configured in production.");
+}
+if (isProduction && !process.env.DATABASE_URL) {
+	throw new Error("DATABASE_URL must be configured in production for persistent sessions.");
+}
 
 const server = http.createServer(app);
 const prisma = new PrismaClient();
+const sessionPool = new Pool({
+	connectionString: process.env.DATABASE_URL,
+	max: 10,
+	idleTimeoutMillis: 30_000,
+	connectionTimeoutMillis: 10_000,
+});
+sessionPool.on("error", (err) => {
+	console.error("PostgreSQL session pool error:", err);
+});
+
+const PgSessionStore = connectPgSimple(session);
 const { initSocket } = require("./socket");
 
 // Allowed Origins
@@ -29,12 +49,11 @@ app.use(
 		origin: function (origin, callback) {
 			if (!origin) return callback(null, true);
 
-			// Allow localhost, prod, and Vercel previews
+			// Allow localhost, production, and Vercel previews.
 			if (allowedOrigins.includes(origin) || /^https:\/\/battleship-2646-[a-z0-9-]+\.vercel\.app$/.test(origin)) {
 				return callback(null, true);
-			} else {
-				return callback(new Error("Not allowed by CORS"));
 			}
+			return callback(new Error("Not allowed by CORS"));
 		},
 		credentials: true,
 	})
@@ -42,23 +61,24 @@ app.use(
 
 app.use(express.json({ limit: "20kb" }));
 
-// Session Middleware
+// Persist sessions in PostgreSQL so logins survive restarts and work across instances.
 const sessionMiddleware = session({
-		secret: process.env.SESSION_SECRET || "keyboard cat",
-		resave: false,
-		saveUninitialized: false,
-		cookie: {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1" || process.env.RENDER === "TRUE",
-			sameSite:
-				process.env.NODE_ENV === "production" || process.env.VERCEL === "1" || process.env.RENDER === "TRUE"
-					? "none"
-					: "lax",
-			// If you want to force cookies to your domain:
-			// domain: process.env.NODE_ENV === "production" ? "sinkthatship.com" : undefined,
-			maxAge: 1000 * 60 * 60 * 24,
-		},
-	});
+	store: new PgSessionStore({
+		pool: sessionPool,
+		tableName: "user_sessions",
+		createTableIfMissing: true,
+		pruneSessionInterval: 15 * 60,
+	}),
+	secret: process.env.SESSION_SECRET || "keyboard cat",
+	resave: false,
+	saveUninitialized: false,
+	cookie: {
+		httpOnly: true,
+		secure: isProduction,
+		sameSite: isProduction ? "none" : "lax",
+		maxAge: 1000 * 60 * 60 * 24,
+	},
+});
 app.use(sessionMiddleware);
 
 // Auth Routes
@@ -124,4 +144,9 @@ io.engine.use(sessionMiddleware);
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
 	console.log(`Server running on http://localhost:${PORT}`);
+});
+
+server.on("close", async () => {
+	await sessionPool.end();
+	await prisma.$disconnect();
 });
