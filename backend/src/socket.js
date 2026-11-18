@@ -34,30 +34,33 @@ function initSocket(server) {
 		}
 	}
 
+	io.use((socket, next) => {
+		const userId = socket.request.session?.userId;
+		if (!Number.isInteger(userId) || userId <= 0) return next(new Error("Unauthorized"));
+		socket.data.userId = userId;
+		next();
+	});
+
 	io.on("connection", (socket) => {
+		const userId = socket.data.userId;
 
-		const userId = parseInt(socket.handshake.query.userId, 10);
-		if (!userId) {
-			console.warn("No userId in socket handshake, disconnecting.");
-			return socket.disconnect();
-		}
-
-		socket.on("find_match", ({ userId, username }) => {
-			if (!userId || !username) {
-				console.warn("find_match missing userId or username");
-				return;
+		socket.on("find_match", async () => {
+			try {
+				const user = await prisma.user.findUnique({ where: { id: userId }, select: { username: true, emailVerified: true } });
+				if (!user || !user.emailVerified) return;
+				socket.data.username = user.username;
+				matchStore.queuePlayer(userId, user.username, socket, io);
+			} catch (err) {
+				console.error("Matchmaking lookup failed:", err.message);
 			}
-			matchStore.queuePlayer(userId, username, socket, io);
 		});
 
-		socket.on("cancel_match", ({ userId }) => {
-			if (!userId) return console.warn("cancel_match missing userId");
+		socket.on("cancel_match", () => {
 			matchStore.removeFromQueue(userId);
 		});
 
-		socket.on("join_match", ({ matchId, userId, board }) => {
-			userId = parseInt(userId, 10);
-			if (!userId || !matchId || !board) return console.warn("join_match missing data");
+		socket.on("join_match", ({ matchId, board }) => {
+			if (!matchId || !Array.isArray(board)) return console.warn("join_match missing data");
 
 			const match = matchStore.getMatch(matchId);
 			if (!match || !match.players[userId]) return;
@@ -79,16 +82,15 @@ function initSocket(server) {
 			}
 		});
 
-		socket.on("place_ships", ({ matchId, userId, board }) => {
-			userId = parseInt(userId, 10);
+		socket.on("place_ships", ({ matchId, board }) => {
+			if (!Array.isArray(board)) return;
 			const match = matchStore.getMatch(matchId);
 			if (!match || !match.players[userId]) return;
 			match.players[userId].board = board;
 		});
 
-		socket.on("leave_match", ({ matchId, userId }) => {
-			userId = parseInt(userId, 10);
-			if (!userId || !matchId) {
+		socket.on("leave_match", ({ matchId }) => {
+			if (!matchId) {
 				console.warn(`leave_match missing userId or matchId`);
 				return;
 			}
@@ -186,7 +188,11 @@ function initSocket(server) {
 		});
 
 		socket.on("chat_message", (msg) => {
-			io.emit("chat_message", msg);
+			if (typeof msg !== "string" || msg.length > 550 || !socket.data.username) return;
+			const separator = msg.indexOf(": ");
+			const message = (separator >= 0 ? msg.slice(separator + 2) : msg).trim();
+			if (!message || message.length > 500) return;
+			io.emit("chat_message", `${socket.data.username}: ${message}`);
 		});
 
 	});
