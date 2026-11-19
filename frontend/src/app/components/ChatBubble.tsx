@@ -51,7 +51,9 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
       if (sender !== user.username && !open) setHasUnread(true);
     };
     socket.on("chat_message", listener);
-    return () => socket.off("chat_message", listener);
+    return () => {
+      socket.off("chat_message", listener);
+    };
   }, [socket, open, user.username]);
 
   useEffect(() => {
