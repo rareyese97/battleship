@@ -149,12 +149,7 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
                 transition={{ duration: 0.16 }}
               >
                 <span className="relative flex items-center justify-center rounded-full bg-gray-800 p-3 text-white transition-colors hover:bg-gray-700">
-                  <span className="relative flex items-center justify-center rounded-full bg-gray-800 p-3 text-white transition-colors hover:bg-gray-700">
                   <MessageCircle size={20} />
-                  {hasUnread && (
-                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
-                  )}
-                </span>
                   {hasUnread && (
                     <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
                   )}
@@ -163,21 +158,7 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
             )}
           </AnimatePresence>
         </motion.div>
-        <AnimatePresence>
-          {hasUnread && !open && (
-            <motion.span
-              key="unread-indicator"
-              aria-label="Unread chat message"
-              className="pointer-events-none absolute -right-1 -top-1 z-20 flex h-3 w-3 items-center justify-center rounded-full border-2 border-white bg-red-500"
-              initial={{ opacity: 0, scale: 0.4 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.4 }}
-              transition={{ type: "spring", stiffness: 500, damping: 24 }}
-            >
 
-            </motion.span>
-          )}
-        </AnimatePresence>
       </motion.div>
     </div>
   );
