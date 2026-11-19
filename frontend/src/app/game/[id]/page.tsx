@@ -204,20 +204,20 @@ export default function GamePage() {
 			const centerRow = (Math.min(...rows) + Math.max(...rows)) / 2;
 			const centerCol = (Math.min(...cols) + Math.max(...cols)) / 2;
 			impactStyle = {
-				left: 32 + centerCol * 32,
-				top: 24 + centerRow * 32,
+				left: `${((centerCol + 1.5) / 11) * 100}%`,
+				top: `${((centerRow + 1.5) / 11) * 100}%`,
 				"--ship-length": effect.cells.length,
 			} as React.CSSProperties;
 		}
 
 		return (
-			<div className="relative mx-auto w-fit">
-				<table className="border-collapse mx-auto">
+			<div className="relative mx-auto w-full max-w-[min(92vw,360px)] overflow-visible">
+				<table className="w-full table-fixed border-collapse mx-auto">
 					<thead>
 						<tr>
 							<th></th>
 							{Array.from({ length: 10 }, (_, i) => (
-								<th key={i} className="px-2 text-sm text-gray-400">
+								<th key={i} className="px-0 text-[10px] sm:text-xs text-gray-400">
 									{String.fromCharCode(65 + i)}
 								</th>
 							))}
@@ -226,7 +226,7 @@ export default function GamePage() {
 					<tbody>
 						{board.map((row, ri) => (
 							<tr key={ri}>
-								<td className="px-2 text-gray-400 text-sm">{ri + 1}</td>
+								<td className="w-6 px-0 text-center text-[10px] sm:text-xs text-gray-400">{ri + 1}</td>
 								{row.map((cell, ci) => {
 									const isVisible = cell.revealed || cell.sunk || !clickable;
 									const cellClasses = cell.sunk
@@ -262,7 +262,7 @@ export default function GamePage() {
 	if (!user) return null;
 
 	return (
-		<div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 bg-grid p-8 text-white">
+		<div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-900 bg-grid px-2 py-5 sm:p-8 text-white">
 			<AnimatePresence>
 				{toastMsg && (
 					<motion.div
@@ -295,16 +295,16 @@ export default function GamePage() {
 				</div>
 			)}
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-6">
+			<div className="grid w-full max-w-4xl grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 mb-6 px-1">
 				<div>
-					<h3 className="mb-2 text-lg font-medium">Enemy Waters</h3>
-					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
+					<h3 className="mb-2 text-center text-lg font-medium text-sky-300">Enemy Waters</h3>
+					<div className="w-full rounded-lg border border-sky-400/30 relative bg-sky-950/40 p-1 sm:p-2">
 						{renderBoard(enemyBoard, true)}
 					</div>
 				</div>
 				<div>
-					<h3 className="mb-2 text-lg font-medium">Your Fleet</h3>
-					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
+					<h3 className="mb-2 text-center text-lg font-medium text-emerald-300">Your Fleet</h3>
+					<div className="w-full rounded-lg border border-emerald-400/30 relative bg-emerald-950/40 p-1 sm:p-2">
 						{renderBoard(yourBoard, false)}
 					</div>
 				</div>
