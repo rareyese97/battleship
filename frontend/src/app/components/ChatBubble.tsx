@@ -142,13 +142,18 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
                   setHasUnread(false);
                 }}
                 aria-label="Open chat"
-                className="flex h-full w-full items-center justify-center rounded-full bg-gray-800 text-white transition-colors hover:bg-gray-700"
+                className="flex h-full w-full items-center justify-center"
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.85 }}
                 transition={{ duration: 0.16 }}
               >
-                <MessageCircle size={20} />
+                <span className="relative flex items-center justify-center rounded-full bg-gray-800 p-3 text-white transition-colors hover:bg-gray-700">
+                  <MessageCircle size={20} />
+                  {hasUnread && (
+                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
+                  )}
+                </span>
               </motion.button>
             )}
           </AnimatePresence>
@@ -158,13 +163,13 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
             <motion.span
               key="unread-indicator"
               aria-label="Unread chat message"
-              className="pointer-events-none absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-900 bg-red-500 shadow-md"
+              className="pointer-events-none absolute -right-1 -top-1 z-20 flex h-3 w-3 items-center justify-center rounded-full border-2 border-white bg-red-500"
               initial={{ opacity: 0, scale: 0.4 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.4 }}
               transition={{ type: "spring", stiffness: 500, damping: 24 }}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+
             </motion.span>
           )}
         </AnimatePresence>
