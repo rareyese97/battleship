@@ -298,13 +298,13 @@ export default function GamePage() {
 			<div className="grid w-full max-w-4xl grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 mb-6 px-1">
 				<div>
 					<h3 className="mb-2 text-center text-lg font-medium text-sky-300">Enemy Waters</h3>
-					<div className="w-full rounded-lg border-2 border-red-500/80 shadow-[0_0_14px_rgba(239,68,68,0.18)] relative bg-sky-950/40 p-1 sm:p-2">
+					<div className="w-full rounded-lg border-2 border-sky-500/70 shadow-[0_0_14px_rgba(14,165,233,0.16)] relative bg-sky-950/40 p-1 sm:p-2">
 						{renderBoard(enemyBoard, true)}
 					</div>
 				</div>
 				<div>
 					<h3 className="mb-2 text-center text-lg font-medium text-emerald-300">Your Fleet</h3>
-					<div className="w-full rounded-lg border-2 border-red-500/80 shadow-[0_0_14px_rgba(239,68,68,0.18)] relative bg-emerald-950/40 p-1 sm:p-2">
+					<div className="w-full rounded-lg border-2 border-emerald-500/70 shadow-[0_0_14px_rgba(16,185,129,0.16)] relative bg-emerald-950/40 p-1 sm:p-2">
 						{renderBoard(yourBoard, false)}
 					</div>
 				</div>
