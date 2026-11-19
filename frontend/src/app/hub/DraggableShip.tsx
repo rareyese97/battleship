@@ -62,7 +62,7 @@ export default function DraggableShip({
 		boxShadow: "0 0 8px rgba(0,0,0,0.5)",
 		touchAction: "none",
 		cursor: "grab",
-		zIndex: 50,
+		zIndex: 1,
 	};
 
 	return (
