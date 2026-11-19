@@ -34,11 +34,24 @@ function initSocket(server) {
 		}
 	}
 
-	io.use((socket, next) => {
-		const userId = socket.request.session?.userId;
-		if (!Number.isInteger(userId) || userId <= 0) return next(new Error("Unauthorized"));
-		socket.data.userId = userId;
-		next();
+	io.use(async (socket, next) => {
+		try {
+			const userId = socket.request.session?.userId;
+			if (!Number.isInteger(userId) || userId <= 0) return next(new Error("Unauthorized"));
+
+			const user = await prisma.user.findUnique({
+				where: { id: userId },
+				select: { username: true },
+			});
+			if (!user) return next(new Error("Unauthorized"));
+
+			socket.data.userId = userId;
+			socket.data.username = user.username;
+			next();
+		} catch (err) {
+			console.error("Socket authentication failed:", err.message);
+			next(new Error("Authentication failed"));
+		}
 	});
 
 	io.on("connection", (socket) => {

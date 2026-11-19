@@ -27,7 +27,7 @@ interface BombResultPayload {
 	row: number;
 	col: number;
 	hit: boolean;
-	yourSide: "your" | "enemy";
+	yourSide: "own" | "enemy";
 	shipId?: number;
 	sunk?: boolean;
 }
@@ -48,6 +48,7 @@ export default function GamePage() {
 	const [gameOver, setGameOver] = useState(false);
 	const [result, setResult] = useState<"win" | "lose" | "disconnect" | null>(null);
 	const [toastMsg, setToastMsg] = useState<string | null>(null);
+	const [sunkEffects, setSunkEffects] = useState<Record<"own" | "enemy", { id: number; cells: { row: number; col: number }[] } | null>>({ own: null, enemy: null });
 
 	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -112,6 +113,9 @@ export default function GamePage() {
 
 		socket.on("bomb_result", (payload: BombResultPayload & { sunkShipCells?: { row: number; col: number }[] }) => {
 			const { row, col, hit, yourSide, shipId, sunk, sunkShipCells = [] } = payload;
+			if (sunk && sunkShipCells.length > 0) {
+				setSunkEffects((prev) => ({ ...prev, [yourSide]: { id: Date.now(), cells: sunkShipCells } }));
+			}
 
 			const updateBoard = (board: BoardState) =>
 				board.map((rArr, i) =>
@@ -134,8 +138,9 @@ export default function GamePage() {
 							newCell = {
 								...newCell,
 								sunk: true,
-								status: "hit", // ensure sunk cells stay red
+								status: "hit",
 								revealed: true,
+								shipId: shipId !== undefined ? shipId : newCell.shipId,
 							};
 						}
 
@@ -189,47 +194,70 @@ export default function GamePage() {
 		setTimeout(() => setToastMsg(null), 3000);
 	};
 
-	const renderBoard = (board: BoardState, clickable: boolean) => (
-		<table className="border-collapse mx-auto">
-			<thead>
-				<tr>
-					<th></th>
-					{Array.from({ length: 10 }, (_, i) => (
-						<th key={i} className="px-2 text-sm text-gray-400">
-							{String.fromCharCode(65 + i)}
-						</th>
-					))}
-				</tr>
-			</thead>
-			<tbody>
-				{board.map((row, ri) => (
-					<tr key={ri}>
-						<td className="px-2 text-gray-400 text-sm">{ri + 1}</td>
-						{row.map((cell, ci) => {
-							const isVisible = cell.revealed || cell.sunk || !clickable;
-							const cellClasses = cell.sunk
-								? "w-8 h-8 relative animate-strong-pulse transition duration-150 cursor-default"
-								: "w-8 h-8 border border-white/30 relative water-effect " +
-								  (cell.status === "hit"
+	const renderBoard = (board: BoardState, clickable: boolean) => {
+		const side = clickable ? "enemy" : "own";
+		const effect = sunkEffects[side];
+		let impactStyle: React.CSSProperties | undefined;
+		if (effect?.cells.length) {
+			const rows = effect.cells.map((cell) => cell.row);
+			const cols = effect.cells.map((cell) => cell.col);
+			const centerRow = (Math.min(...rows) + Math.max(...rows)) / 2;
+			const centerCol = (Math.min(...cols) + Math.max(...cols)) / 2;
+			impactStyle = {
+				left: 32 + centerCol * 32,
+				top: 24 + centerRow * 32,
+				"--ship-length": effect.cells.length,
+			} as React.CSSProperties;
+		}
+
+		return (
+			<div className="relative mx-auto w-fit">
+				<table className="border-collapse mx-auto">
+					<thead>
+						<tr>
+							<th></th>
+							{Array.from({ length: 10 }, (_, i) => (
+								<th key={i} className="px-2 text-sm text-gray-400">
+									{String.fromCharCode(65 + i)}
+								</th>
+							))}
+						</tr>
+					</thead>
+					<tbody>
+						{board.map((row, ri) => (
+							<tr key={ri}>
+								<td className="px-2 text-gray-400 text-sm">{ri + 1}</td>
+								{row.map((cell, ci) => {
+									const isVisible = cell.revealed || cell.sunk || !clickable;
+									const cellClasses = cell.sunk
+									? "w-8 h-8 relative sunk-cell cursor-default"
+									: "w-8 h-8 border border-white/30 relative water-effect " +
+									  (cell.status === "hit"
 										? "bg-red-600"
 										: cell.status === "miss"
 										? "bg-white"
 										: cell.status === "ship" && isVisible
-										? "bg-blue-500"
-										: "bg-transparent") +
-								  (clickable ? " cursor-pointer" : " cursor-default");
+											? "bg-blue-500"
+											: "bg-transparent") +
+									  (clickable ? " cursor-pointer" : " cursor-default");
 
-							return (
-								<td key={ci} className={cellClasses} onClick={() => clickable && clickEnemyCell(ri, ci)}>
-									{cell.sunk && <div className="sunk-label">SUNK!</div>}
-								</td>
-							);
-						})}
-					</tr>
-				))}
-			</tbody>
-		</table>
-	);
+									return (
+										<td key={ci} className={cellClasses} onClick={() => clickable && clickEnemyCell(ri, ci)} />
+									);
+								})}
+							</tr>
+						))}
+					</tbody>
+				</table>
+				{effect && impactStyle && (
+					<div key={effect.id} className="sunk-impact" style={impactStyle} aria-live="polite">
+						<span className="sunk-impact-ring" />
+						<span className="sunk-label">SHIP SUNK!</span>
+					</div>
+				)}
+			</div>
+		);
+	};
 
 	if (!user) return null;
 

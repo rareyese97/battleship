@@ -308,27 +308,34 @@ export default function HubPage() {
 				</div>
 
 				{/* Leaderboard */}
-				<div className="space-y-4 pb-24">
-					<h3 className="text-2xl font-semibold mb-2">Global Leaderboard</h3>
-					<div className="overflow-auto rounded-lg border border-white/10 max-h-96">
-						<table className="w-full text-left">
+				<div className="min-w-0 space-y-4 pb-24">
+					<h3 className="mb-2 text-2xl font-semibold">Global Leaderboard</h3>
+					<div className="max-h-96 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-white/10">
+						<table className="w-full table-fixed text-left text-xs sm:text-sm">
+							<colgroup>
+								<col className="w-[10%]" />
+								<col className="w-[38%]" />
+								<col className="w-[16%]" />
+								<col className="w-[18%]" />
+								<col className="w-[18%]" />
+							</colgroup>
 							<thead className="bg-gray-800">
 								<tr>
-									<th className="px-4 py-2">#</th>
-									<th className="px-4 py-2">Username</th>
-									<th className="px-4 py-2">Wins</th>
-									<th className="px-4 py-2">Losses</th>
-									<th className="px-4 py-2">Ratio</th>
+									<th className="whitespace-nowrap px-2 py-2 sm:px-3">#</th>
+									<th className="px-2 py-2 sm:px-3">Username</th>
+									<th className="whitespace-nowrap px-2 py-2 sm:px-3">Wins</th>
+									<th className="whitespace-nowrap px-2 py-2 sm:px-3">Losses</th>
+									<th className="whitespace-nowrap px-2 py-2 sm:px-3">Ratio</th>
 								</tr>
 							</thead>
 							<tbody>
 								{leaders.map((u, idx) => (
 									<tr key={u.id} className="hover:bg-gray-700">
-										<td className="px-4 py-2">{idx + 1}</td>
-										<td className="px-4 py-2">{u.username}</td>
-										<td className="px-4 py-2">{u.wins}</td>
-										<td className="px-4 py-2">{u.losses}</td>
-										<td className="px-4 py-2">{u.losses === 0 ? u.wins.toFixed(2) : (u.wins / u.losses).toFixed(2)}</td>
+										<td className="px-2 py-2 sm:px-3">{idx + 1}</td>
+										<td className="truncate px-2 py-2 sm:px-3" title={u.username}>{u.username}</td>
+										<td className="px-2 py-2 sm:px-3">{u.wins}</td>
+										<td className="px-2 py-2 sm:px-3">{u.losses}</td>
+										<td className="px-2 py-2 sm:px-3">{u.losses === 0 ? u.wins.toFixed(2) : (u.wins / u.losses).toFixed(2)}</td>
 									</tr>
 								))}
 							</tbody>
