@@ -211,13 +211,13 @@ export default function GamePage() {
 		}
 
 		return (
-			<div className="relative mx-auto w-full max-w-[min(92vw,360px)] overflow-visible">
-				<table className="w-full table-fixed border-collapse mx-auto">
+			<div className="relative mx-auto w-fit overflow-visible">
+				<table className="border-collapse mx-auto">
 					<thead>
 						<tr>
 							<th></th>
 							{Array.from({ length: 10 }, (_, i) => (
-								<th key={i} className="px-0 text-[10px] sm:text-xs text-gray-400">
+								<th key={i} className="px-2 text-sm text-gray-400">
 									{String.fromCharCode(65 + i)}
 								</th>
 							))}
@@ -226,20 +226,20 @@ export default function GamePage() {
 					<tbody>
 						{board.map((row, ri) => (
 							<tr key={ri}>
-								<td className="w-6 px-0 text-center text-[10px] sm:text-xs text-gray-400">{ri + 1}</td>
+								<td className="px-2 text-gray-400 text-sm">{ri + 1}</td>
 								{row.map((cell, ci) => {
 									const isVisible = cell.revealed || cell.sunk || !clickable;
 									const cellClasses = cell.sunk
-										? "aspect-square relative sunk-cell cursor-default"
-										: "aspect-square border border-white/30 relative water-effect " +
-										  (cell.status === "hit"
-											? "bg-red-600"
-											: cell.status === "miss"
-												? "bg-white"
-												: cell.status === "ship" && isVisible
-													? (clickable ? "bg-blue-500" : "bg-emerald-500")
-													: clickable ? "bg-blue-950/70" : "bg-emerald-950/70") +
-										  (clickable ? " cursor-pointer" : " cursor-default");
+									? "w-8 h-8 relative sunk-cell cursor-default"
+									: "w-8 h-8 border border-white/30 relative water-effect " +
+									  (cell.status === "hit"
+										? "bg-red-600"
+										: cell.status === "miss"
+										? "bg-white"
+										: cell.status === "ship" && isVisible
+											? "bg-blue-500"
+											: "bg-transparent") +
+									  (clickable ? " cursor-pointer" : " cursor-default");
 
 									return (
 										<td key={ci} className={cellClasses} onClick={() => clickable && clickEnemyCell(ri, ci)} />
@@ -262,7 +262,7 @@ export default function GamePage() {
 	if (!user) return null;
 
 	return (
-		<div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-900 bg-grid px-2 py-5 sm:p-8 text-white">
+		<div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 bg-grid p-8 text-white">
 			<AnimatePresence>
 				{toastMsg && (
 					<motion.div
@@ -295,16 +295,16 @@ export default function GamePage() {
 				</div>
 			)}
 
-			<div className="grid w-full max-w-4xl grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 mb-6 px-1">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-6">
 				<div>
-					<h3 className="mb-2 text-center text-lg font-medium text-sky-300">Enemy Waters</h3>
-					<div className="w-full rounded-lg border-2 border-sky-500/70 shadow-[0_0_14px_rgba(14,165,233,0.16)] relative bg-sky-950/40 p-1 sm:p-2">
+					<h3 className="mb-2 text-lg font-medium">Enemy Waters</h3>
+					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
 						{renderBoard(enemyBoard, true)}
 					</div>
 				</div>
 				<div>
-					<h3 className="mb-2 text-center text-lg font-medium text-emerald-300">Your Fleet</h3>
-					<div className="w-full rounded-lg border-2 border-emerald-500/70 shadow-[0_0_14px_rgba(16,185,129,0.16)] relative bg-emerald-950/40 p-1 sm:p-2">
+					<h3 className="mb-2 text-lg font-medium">Your Fleet</h3>
+					<div className="overflow-auto rounded-lg border border-white/10 relative bg-gray-800">
 						{renderBoard(yourBoard, false)}
 					</div>
 				</div>
