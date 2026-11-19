@@ -149,7 +149,12 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
                 transition={{ duration: 0.16 }}
               >
                 <span className="relative flex items-center justify-center rounded-full bg-gray-800 p-3 text-white transition-colors hover:bg-gray-700">
+                  <span className="relative flex items-center justify-center rounded-full bg-gray-800 p-3 text-white transition-colors hover:bg-gray-700">
                   <MessageCircle size={20} />
+                  {hasUnread && (
+                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
+                  )}
+                </span>
                   {hasUnread && (
                     <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
                   )}
