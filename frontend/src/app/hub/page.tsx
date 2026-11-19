@@ -292,7 +292,7 @@ export default function HubPage() {
 									/>
 								))}
 
-								<DragOverlay>{renderOverlay()}</DragOverlay>
+								<DragOverlay zIndex={20}>{renderOverlay()}</DragOverlay>
 							</DndContext>
 						</div>
 					</div>
