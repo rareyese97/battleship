@@ -65,13 +65,18 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
       <motion.div
         className="relative overflow-visible"
         initial={false}
+        style={{ maxWidth: "calc(100vw - 32px)", maxHeight: "45vh" }}
         animate={{
-          width: open ? "min(360px, calc(100vw - 32px))" : 48,
-          height: open ? "min(320px, 45vh)" : 48,
+          width: open ? 360 : 48,
+          height: open ? 320 : 48,
         }}
         transition={{ type: "spring", stiffness: 280, damping: 28, mass: 0.8 }}
       >
-        <div className="absolute inset-0 overflow-hidden rounded-[18px] bg-white shadow-xl">
+        <motion.div
+          className="absolute inset-0 overflow-hidden bg-white shadow-xl"
+          animate={{ borderRadius: open ? 18 : 999 }}
+          transition={{ type: "spring", stiffness: 280, damping: 28 }}
+        >
           <AnimatePresence initial={false} mode="wait">
             {open ? (
               <motion.div
@@ -145,7 +150,7 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
               </motion.button>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
         <AnimatePresence>
           {hasUnread && !open && (
             <motion.span
