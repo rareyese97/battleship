@@ -67,10 +67,14 @@ export default function Navbar() {
 		<>
 			<div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
 				<motion.div
-					className={
-						`bg-white shadow-lg overflow-hidden relative transform origin-bottom transition-all duration-300 ease-in-out ` +
-						(open ? "w-52 h-44 sm:w-60 sm:h-48 rounded-2xl" : "w-30 h-12 rounded-full")
-					}
+					className="bg-white shadow-lg overflow-hidden relative origin-bottom"
+					initial={false}
+					animate={{
+						width: open ? "min(240px, calc(100vw - 32px))" : 120,
+						height: open ? 192 : 48,
+						borderRadius: open ? 18 : 999,
+					}}
+					transition={{ type: "spring", stiffness: 280, damping: 28, mass: 0.8 }}
 				>
 					{/* Close button */}
 					<AnimatePresence>
