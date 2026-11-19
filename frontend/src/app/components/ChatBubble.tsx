@@ -75,7 +75,7 @@ export default function ChatBubble({ socket, user, matchId }: ChatBubbleProps) {
         transition={{ type: "spring", stiffness: 280, damping: 28, mass: 0.8 }}
       >
         <motion.div
-          className="absolute inset-0 overflow-hidden bg-white shadow-xl"
+          className={`absolute inset-0 ${open ? "overflow-hidden" : "overflow-visible"} bg-white shadow-xl` }
           animate={{ borderRadius: open ? 18 : 999 }}
           transition={{ type: "spring", stiffness: 280, damping: 28 }}
         >
