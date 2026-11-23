@@ -70,7 +70,7 @@ SinkThatShip is organized as a separate frontend and backend:
 
 1. The **Next.js frontend** renders the landing page, account flows, matchmaking hub, fleet placement screen, and active game.
 2. The **Express backend** handles authentication, session management, leaderboard data, and HTTP API requests.
-3. **PostgreSQL** stores user accounts, verification and password-reset state, game records, messages, friend-request records, and persistent login sessions.
+3. **PostgreSQL** stores user accounts, verification and password-reset state, game records, messages, and persistent login sessions.
 4. **Prisma** provides database access to the backend.
 5. **Socket.IO** shares authenticated sessions with real-time connections and coordinates matchmaking, game events, and in-game chat.
 
@@ -218,7 +218,6 @@ The primary models include:
 - **User** — account credentials (stored as password hashes), email-verification state, password-reset state, and win/loss statistics.
 - **Game** — players, winner, creation time, and related messages.
 - **Message** — chat messages associated with a game and sender.
-- **FriendRequest** — sender, receiver, request status, and creation time.
 
 Apply existing migrations from the `backend/` directory:
 
